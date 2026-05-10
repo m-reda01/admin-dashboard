@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" aria-hidden="true">
+  <rect width="60" height="40" fill="#165d31" />
+  <!-- Stylized white inscription bands (readable at small sizes; not an official reproduction) -->
+  <path
+    fill="none"
+    stroke="#fff"
+    stroke-linecap="round"
+    stroke-width="2"
+    d="M8 11h15M8 17h18M8 23h14M8 29h16"
+  />
+</svg>

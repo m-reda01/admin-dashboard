@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { buildDashboardChartModels } from "../../application/dashboard/buildDashboardChartModels.js";
+import { buildDashboardChartModels } from "../../app/dashboard/buildDashboardChartModels.js";
 import { DashboardOverviewShimmer } from "../dashboard/DashboardOverviewShimmer.jsx";
 import { DashboardReferenceLayout } from "../dashboard/DashboardReferenceLayout.jsx";
 import { DashboardLayout } from "../layouts/DashboardLayout.jsx";

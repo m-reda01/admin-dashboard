@@ -24,7 +24,9 @@ import {
 } from "../payments/billingPaymentUi.jsx";
 import { AppAlert } from "../components/AppAlert.jsx";
 import { DashboardLayout } from "../layouts/DashboardLayout.jsx";
+import { ManagementIndexLayout } from "../layouts/ManagementIndexLayout.jsx";
 import { useI18n } from "../i18n/I18nProvider.jsx";
+import { getPaginationPages } from "../utils/pagination.js";
 
 const PAGE_SIZE = 10;
 
@@ -92,11 +94,7 @@ export function BillingPage({ getUserProfileUseCase, listPaymentsUseCase, onNavi
             return [
               userId,
               {
-                displayName:
-                  user.displayName ||
-                  [user.firstName, user.lastName].filter(Boolean).join(" ") ||
-                  user.email ||
-                  userId,
+                displayName: user.displayName?.trim() || user.email || userId,
                 email: user.email || "",
               },
             ];
@@ -214,37 +212,39 @@ export function BillingPage({ getUserProfileUseCase, listPaymentsUseCase, onNavi
 
   return (
     <DashboardLayout activePage="billing" onNavigate={onNavigate} session={session} title={t("billing.title")}>
-      <div className="users-management-page plans-management-page billing-payments-page billing-page">
-        <div className="billing-stats-grid">
-          <BillingStatCard
-            icon={<CreditCard size={16} />}
-            iconClassName="billing-stat-icon billing-stat-icon--green"
-            isLoading={isLoading}
-            label={t("billing.totalRevenue")}
-            sublabel={isLoading ? "" : t("billing.completedTransactions", { count: stats.paidCount })}
-            value={formatBillingCurrency(stats.totalRevenue, stats.currency, language)}
-          />
-          <BillingStatCard
-            icon={<FileX size={16} />}
-            iconClassName="billing-stat-icon billing-stat-icon--red"
-            isLoading={isLoading}
-            label={t("billing.cancelledPayment")}
-            sublabel={isLoading ? "" : t("billing.cancelledTransactions", { count: stats.cancelledCount })}
-            value={formatBillingCurrency(stats.cancelledAmount, stats.currency, language)}
-          />
-          <BillingStatCard
-            icon={<RefreshCw size={16} />}
-            iconClassName="billing-stat-icon billing-stat-icon--orange"
-            isLoading={isLoading}
-            label={t("billing.numberOfTransactions")}
-            sublabel={t("billing.allTransactions")}
-            value={String(stats.totalTransactions)}
-          />
-        </div>
-
-        <div className="users-toolbar">
-          <AppAlert message={alert?.message} variant={alert?.variant} onClose={() => setAlert(null)} />
-          <div className="users-toolbar-actions">
+      <ManagementIndexLayout
+        className="plans-management-page billing-payments-page billing-page"
+        beforeToolbar={
+          <div className="billing-stats-grid">
+            <BillingStatCard
+              icon={<CreditCard size={16} />}
+              iconClassName="billing-stat-icon billing-stat-icon--green"
+              isLoading={isLoading}
+              label={t("billing.totalRevenue")}
+              sublabel={isLoading ? "" : t("billing.completedTransactions", { count: stats.paidCount })}
+              value={formatBillingCurrency(stats.totalRevenue, stats.currency, language)}
+            />
+            <BillingStatCard
+              icon={<FileX size={16} />}
+              iconClassName="billing-stat-icon billing-stat-icon--red"
+              isLoading={isLoading}
+              label={t("billing.cancelledPayment")}
+              sublabel={isLoading ? "" : t("billing.cancelledTransactions", { count: stats.cancelledCount })}
+              value={formatBillingCurrency(stats.cancelledAmount, stats.currency, language)}
+            />
+            <BillingStatCard
+              icon={<RefreshCw size={16} />}
+              iconClassName="billing-stat-icon billing-stat-icon--orange"
+              isLoading={isLoading}
+              label={t("billing.numberOfTransactions")}
+              sublabel={t("billing.allTransactions")}
+              value={String(stats.totalTransactions)}
+            />
+          </div>
+        }
+        toolbarAlert={<AppAlert message={alert?.message} variant={alert?.variant} onClose={() => setAlert(null)} />}
+        toolbarActions={
+          <>
             <label className="users-search">
               <Search size={18} />
               <input
@@ -282,9 +282,9 @@ export function BillingPage({ getUserProfileUseCase, listPaymentsUseCase, onNavi
             >
               <Download size={18} aria-hidden />
             </button>
-          </div>
-        </div>
-
+          </>
+        }
+      >
         <div className="users-table-shell plans-table-shell billing-payments-table-shell">
           <div className="users-table-scroll plans-table-scroll">
             <table className="plans-table payments-table billing-payments-table" data-testid="billing-payments-table">
@@ -459,7 +459,7 @@ export function BillingPage({ getUserProfileUseCase, listPaymentsUseCase, onNavi
             }}
           />
         ) : null}
-      </div>
+      </ManagementIndexLayout>
     </DashboardLayout>
   );
 }
@@ -516,14 +516,6 @@ function BillingPaymentsTableShimmerRows({ rowCount }) {
       </td>
     </tr>
   ));
-}
-
-function getPaginationPages(currentPage, totalPages) {
-  const pages = new Set([1, totalPages]);
-  for (let page = currentPage - 2; page <= currentPage + 2; page += 1) {
-    if (page >= 1 && page <= totalPages) pages.add(page);
-  }
-  return Array.from(pages).sort((left, right) => left - right);
 }
 
 function getPaymentSubscriber(payment, subscriberMap, t) {

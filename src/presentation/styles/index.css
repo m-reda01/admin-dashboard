@@ -2,4 +2,5 @@
  * Single stylesheet entry for the admin app.
  * Imported from src/main.jsx — keeps one canonical path for global UI styles.
  */
+@import "./aurora-theme.css";
 @import "./global.css";

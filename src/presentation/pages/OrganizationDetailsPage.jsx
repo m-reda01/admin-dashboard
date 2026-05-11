@@ -32,17 +32,11 @@ import {
   getDocumentListStatusKey,
   getDocumentUploaderUserId,
 } from "../documents/documentReadModels.jsx";
+import { getPaginationPages } from "../utils/pagination.js";
 
 export const ORG_TAB_PAGE_SIZE = 10;
 
-export function getPaginationPages(currentPage, totalPages) {
-  const delta = 2;
-  const pages = new Set([1, totalPages]);
-  for (let i = currentPage - delta; i <= currentPage + delta; i++) {
-    if (i >= 1 && i <= totalPages) pages.add(i);
-  }
-  return Array.from(pages).sort((a, b) => a - b);
-}
+export { getPaginationPages };
 
 export function hasBlockchainSection(org) {
   if (!org) return false;

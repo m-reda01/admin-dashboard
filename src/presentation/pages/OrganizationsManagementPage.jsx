@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { AppAlert } from "../components/AppAlert.jsx";
 import { DashboardLayout } from "../layouts/DashboardLayout.jsx";
+import { ManagementIndexLayout } from "../layouts/ManagementIndexLayout.jsx";
 import { useI18n } from "../i18n/I18nProvider.jsx";
 
 const ORGANIZATIONS_PAGE_SIZE = 10;
@@ -150,14 +151,13 @@ export function OrganizationsManagementPage({ listOrganizationsUseCase, onNaviga
       session={session}
       title={t("organizationsManagement.title")}
     >
-      <div className="users-management-page organizations-management-page">
-        <div className="users-toolbar">
-          <AppAlert
-            message={alert?.message}
-            variant={alert?.variant}
-            onClose={() => setAlert(null)}
-          />
-          <div className="users-toolbar-actions">
+      <ManagementIndexLayout
+        className="organizations-management-page"
+        toolbarAlert={
+          <AppAlert message={alert?.message} variant={alert?.variant} onClose={() => setAlert(null)} />
+        }
+        toolbarActions={
+          <>
             <label className="users-search">
               <Search size={18} />
               <input
@@ -186,9 +186,9 @@ export function OrganizationsManagementPage({ listOrganizationsUseCase, onNaviga
                 {t("organizationsManagement.deleteSelected", { count: selectedOrganizations.length })}
               </button>
             )}
-          </div>
-        </div>
-
+          </>
+        }
+      >
         <div className="users-table-shell">
           <div className="users-table-scroll">
             <table className="users-table organizations-table">
@@ -336,7 +336,7 @@ export function OrganizationsManagementPage({ listOrganizationsUseCase, onNaviga
             <button type="button" disabled={isSelectionMode || safeCurrentPage === totalPages} onClick={() => goToPage(totalPages)}><ChevronsRight size={16} /></button>
           </div>
         </div>
-      </div>
+      </ManagementIndexLayout>
     </DashboardLayout>
   );
 }

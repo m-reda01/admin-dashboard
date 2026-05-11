@@ -1,15 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Building2, ExternalLink, Pencil } from "lucide-react";
-import {
-  ORG_TAB_PAGE_SIZE,
-  getPaginationPages,
-  hasBlockchainSection,
-  OrgBlockchainTab,
-  OrgDocumentsTab,
-  OrgMembersTab,
-  OrgPaymentsTab,
-  OrgSubscriptionTab,
-} from "./OrganizationDetailsPage.jsx";
+import React, { useCallback, useEffect, useState } from "react";
+import { Building2, ExternalLink, Pencil, X } from "lucide-react";
+import { ORG_TAB_PAGE_SIZE, getPaginationPages, OrgDocumentsTab, OrgPaymentsTab, OrgSubscriptionTab } from "./OrganizationDetailsPage.jsx";
 import { DocumentDetailsModal } from "../documents/documentReadModels.jsx";
 import { DashboardLayout } from "../layouts/DashboardLayout.jsx";
 import { useI18n } from "../i18n/I18nProvider.jsx";
@@ -19,16 +10,13 @@ import {
   complaintStatusOptionLabel,
   formatComplaintDate,
 } from "../complaints/complaintAdminShared.jsx";
+import { profilePhotoHighResUrl } from "../utils/profilePhotoUrl.js";
 
 export function UserDetailsPage({
-  getOrganizationUseCase,
   getUserProfileUseCase,
   listComplaintsByUserIdUseCase,
   updateComplaintStatusUseCase,
-  listOrganizationDocumentsUseCase,
-  listOrganizationMembersUseCase,
   listOrganizationSubscriptionsUseCase,
-  listPaymentsUseCase,
   updateUserUseCase,
   onNavigate,
   session,
@@ -43,18 +31,6 @@ export function UserDetailsPage({
   const [isSaving, setIsSaving] = useState(false);
   const [editError, setEditError] = useState("");
 
-  const [organization, setOrganization] = useState(null);
-  const [orgMembers, setOrgMembers] = useState([]);
-  const [orgDocuments, setOrgDocuments] = useState([]);
-  const [orgSubscriptions, setOrgSubscriptions] = useState([]);
-  const [orgPayments, setOrgPayments] = useState([]);
-  const [orgIsLoading, setOrgIsLoading] = useState(false);
-  const [orgListsLoading, setOrgListsLoading] = useState(false);
-  const [orgLoadError, setOrgLoadError] = useState("");
-  const [orgListsError, setOrgListsError] = useState("");
-  const [activeOrgTab, setActiveOrgTab] = useState("members");
-  const [membersPage, setMembersPage] = useState(1);
-  const [documentsPage, setDocumentsPage] = useState(1);
   const [viewingDoc, setViewingDoc] = useState(null);
 
   const [individualSubscriptions, setIndividualSubscriptions] = useState([]);
@@ -131,17 +107,17 @@ export function UserDetailsPage({
 
   const reloadComplaintsSilent = useCallback(async () => {
     const uid = String(userId || "").trim();
-    if (!uid || !listComplaintsByUserIdUseCase || showOrgWorkspace) return;
+    if (!uid || !listComplaintsByUserIdUseCase) return;
     try {
       const rows = await listComplaintsByUserIdUseCase.execute({ userId: uid });
       setComplaints(Array.isArray(rows) ? rows : []);
     } catch {
       /* keep existing rows */
     }
-  }, [listComplaintsByUserIdUseCase, showOrgWorkspace, userId]);
+  }, [listComplaintsByUserIdUseCase, userId]);
 
   useEffect(() => {
-    if (showOrgWorkspace || !listComplaintsByUserIdUseCase) {
+    if (!listComplaintsByUserIdUseCase) {
       setComplaints([]);
       setComplaintsLoading(false);
       setComplaintsError("");
@@ -179,10 +155,10 @@ export function UserDetailsPage({
     return () => {
       isMounted = false;
     };
-  }, [listComplaintsByUserIdUseCase, showOrgWorkspace, t, userId]);
+  }, [listComplaintsByUserIdUseCase, t, userId]);
 
   useEffect(() => {
-    if (!profile?.user || showOrgWorkspace || !listOrganizationSubscriptionsUseCase) {
+    if (!profile?.user || !listOrganizationSubscriptionsUseCase) {
       setIndividualSubscriptions([]);
       setIndividualSubsLoading(false);
       setIndividualSubsError("");
@@ -227,127 +203,7 @@ export function UserDetailsPage({
     return () => {
       isMounted = false;
     };
-  }, [listOrganizationSubscriptionsUseCase, profile?.user, showOrgWorkspace, t, userId]);
-
-  useEffect(() => {
-    if (!showOrgWorkspace || !orgNavId || !getOrganizationUseCase) {
-      setOrganization(null);
-      setOrgMembers([]);
-      setOrgDocuments([]);
-      setOrgSubscriptions([]);
-      setOrgPayments([]);
-      setOrgLoadError("");
-      setOrgListsError("");
-      setOrgIsLoading(false);
-      setOrgListsLoading(false);
-      return;
-    }
-
-    let isMounted = true;
-
-    async function loadOrgWorkspace() {
-      setOrgIsLoading(true);
-      setOrgLoadError("");
-      setOrgListsError("");
-      setOrganization(null);
-      setOrgMembers([]);
-      setOrgDocuments([]);
-      setOrgSubscriptions([]);
-      setOrgPayments([]);
-
-      try {
-        const row = await getOrganizationUseCase.execute({ orgId: orgNavId });
-        if (!isMounted) return;
-        setOrganization(row);
-        const ownerUid = String(row.ownerUid ?? "").trim();
-        setOrgListsLoading(true);
-        try {
-          const [nextMembers, nextDocs, nextSubs, nextPayments] = await Promise.all([
-            listOrganizationMembersUseCase.execute({ orgId: orgNavId }),
-            listOrganizationDocumentsUseCase.execute({ organizationId: orgNavId, pageSize: 100 }),
-            listOrganizationSubscriptionsUseCase.execute({ ownerUid }),
-            listPaymentsUseCase
-              ? listPaymentsUseCase.execute({
-                  pageSize: 100,
-                  filterOrganizationId: orgNavId,
-                  filterOrganizationOwnerUid: ownerUid,
-                })
-              : Promise.resolve([]),
-          ]);
-          if (isMounted) {
-            setOrgMembers(nextMembers);
-            setOrgDocuments(nextDocs);
-            setOrgSubscriptions(nextSubs);
-            setOrgPayments(Array.isArray(nextPayments) ? nextPayments : []);
-          }
-        } catch (listErr) {
-          if (isMounted) {
-            setOrgListsError(listErr?.message || t("organizationDetails.membersLoadError"));
-          }
-        } finally {
-          if (isMounted) setOrgListsLoading(false);
-        }
-      } catch (e) {
-        if (isMounted) setOrgLoadError(e?.message || t("organizationDetails.loadError"));
-      } finally {
-        if (isMounted) setOrgIsLoading(false);
-      }
-    }
-
-    loadOrgWorkspace();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [
-    getOrganizationUseCase,
-    listOrganizationDocumentsUseCase,
-    listOrganizationMembersUseCase,
-    listOrganizationSubscriptionsUseCase,
-    listPaymentsUseCase,
-    orgNavId,
-    showOrgWorkspace,
-    t,
-  ]);
-
-  useEffect(() => {
-    setMembersPage(1);
-    setDocumentsPage(1);
-    setActiveOrgTab("members");
-  }, [orgNavId]);
-
-  const showBlockchainTab = useMemo(() => hasBlockchainSection(organization), [organization]);
-
-  const tabIds = useMemo(() => {
-    const base = ["members", "files"];
-    if (showBlockchainTab) base.push("blockchain");
-    base.push("subscription", "payments");
-    return base;
-  }, [showBlockchainTab]);
-
-  useEffect(() => {
-    if (showOrgWorkspace && !tabIds.includes(activeOrgTab)) {
-      setActiveOrgTab("members");
-    }
-  }, [activeOrgTab, showOrgWorkspace, tabIds]);
-
-  const visibleMembers = useMemo(() => {
-    return [...orgMembers].sort((a, b) => {
-      const ta = a.joinedAt?.getTime?.() || a.invitedAt?.getTime?.() || 0;
-      const tb = b.joinedAt?.getTime?.() || b.invitedAt?.getTime?.() || 0;
-      return tb - ta;
-    });
-  }, [orgMembers]);
-
-  const memberTotalPages = Math.max(1, Math.ceil(visibleMembers.length / ORG_TAB_PAGE_SIZE));
-  const memberSafePage = Math.min(membersPage, memberTotalPages);
-  const memberPageRows = visibleMembers.slice((memberSafePage - 1) * ORG_TAB_PAGE_SIZE, memberSafePage * ORG_TAB_PAGE_SIZE);
-  const memberPaginationPages = getPaginationPages(memberSafePage, memberTotalPages);
-
-  const docTotalPages = Math.max(1, Math.ceil(orgDocuments.length / ORG_TAB_PAGE_SIZE));
-  const docSafePage = Math.min(documentsPage, docTotalPages);
-  const docPageRows = orgDocuments.slice((docSafePage - 1) * ORG_TAB_PAGE_SIZE, docSafePage * ORG_TAB_PAGE_SIZE);
-  const docPaginationPages = getPaginationPages(docSafePage, docTotalPages);
+  }, [listOrganizationSubscriptionsUseCase, profile?.user, t, userId]);
 
   return (
     <DashboardLayout activePage="users" onNavigate={onNavigate} session={session} title={t("userDetails.title")}>
@@ -385,150 +241,24 @@ export function UserDetailsPage({
               }}
               onOpenOrganization={() => orgNavId && onNavigate(`/organizations/${orgNavId}`)}
             />
-            {showOrgWorkspace ? (
-              orgIsLoading ? (
-                <UserDetailsShimmer />
-              ) : orgLoadError || !organization ? (
-                <section className="user-details-empty organization-details-page">
-                  <h2>{orgLoadError || t("organizationDetails.loadError")}</h2>
-                  <button type="button" data-testid="user-details-org-retry-users" onClick={() => onNavigate("/users")}>
-                    {t("userDetails.backToUsers")}
-                  </button>
-                </section>
-              ) : (
-                <section className="user-details-panel user-details-panel--tabs organization-details-tabs-panel organization-details-page">
-                  <div className="user-details-tabs" role="tablist" aria-label={t("organizationDetails.tabListLabel")}>
-                    <button
-                      type="button"
-                      role="tab"
-                      data-testid="user-details-org-tab-members"
-                      aria-selected={activeOrgTab === "members"}
-                      className={activeOrgTab === "members" ? "is-active" : ""}
-                      onClick={() => setActiveOrgTab("members")}
-                    >
-                      {t("organizationDetails.tabs.members")}
-                    </button>
-                    <button
-                      type="button"
-                      role="tab"
-                      data-testid="user-details-org-tab-files"
-                      aria-selected={activeOrgTab === "files"}
-                      className={activeOrgTab === "files" ? "is-active" : ""}
-                      onClick={() => setActiveOrgTab("files")}
-                    >
-                      {t("organizationDetails.tabs.files")}
-                    </button>
-                    {showBlockchainTab ? (
-                      <button
-                        type="button"
-                        role="tab"
-                        data-testid="user-details-org-tab-blockchain"
-                        aria-selected={activeOrgTab === "blockchain"}
-                        className={activeOrgTab === "blockchain" ? "is-active" : ""}
-                        onClick={() => setActiveOrgTab("blockchain")}
-                      >
-                        {t("organizationDetails.tabs.blockchain")}
-                      </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      role="tab"
-                      data-testid="user-details-org-tab-subscription"
-                      aria-selected={activeOrgTab === "subscription"}
-                      className={activeOrgTab === "subscription" ? "is-active" : ""}
-                      onClick={() => setActiveOrgTab("subscription")}
-                    >
-                      {t("organizationDetails.tabs.subscription")}
-                    </button>
-                    <button
-                      type="button"
-                      role="tab"
-                      data-testid="user-details-org-tab-payments"
-                      aria-selected={activeOrgTab === "payments"}
-                      className={activeOrgTab === "payments" ? "is-active" : ""}
-                      onClick={() => setActiveOrgTab("payments")}
-                    >
-                      {t("organizationDetails.tabs.paymentTransactions")}
-                    </button>
-                  </div>
-
-                  {orgListsError ? (
-                    <p className="organization-details-lists-error" data-testid="user-details-org-lists-error">
-                      {orgListsError}
-                    </p>
-                  ) : null}
-
-                  {activeOrgTab === "members" ? (
-                    <OrgMembersTab
-                      isLoading={orgListsLoading}
-                      language={language}
-                      memberPageRows={memberPageRows}
-                      memberPaginationPages={memberPaginationPages}
-                      memberSafePage={memberSafePage}
-                      memberTotalPages={memberTotalPages}
-                      onNavigate={onNavigate}
-                      setMembersPage={setMembersPage}
-                      t={t}
-                      visibleMembers={visibleMembers}
-                    />
-                  ) : null}
-
-                  {activeOrgTab === "files" ? (
-                    <OrgDocumentsTab
-                      docPageRows={docPageRows}
-                      docPaginationPages={docPaginationPages}
-                      docSafePage={docSafePage}
-                      docTotalPages={docTotalPages}
-                      documents={orgDocuments}
-                      isLoading={orgListsLoading}
-                      language={language}
-                      onNavigate={onNavigate}
-                      setDocumentsPage={setDocumentsPage}
-                      setViewingDoc={setViewingDoc}
-                      t={t}
-                    />
-                  ) : null}
-
-                  {activeOrgTab === "blockchain" && showBlockchainTab ? (
-                    <OrgBlockchainTab organization={organization} t={t} />
-                  ) : null}
-
-                  {activeOrgTab === "subscription" ? (
-                    <OrgSubscriptionTab language={language} listsLoading={orgListsLoading} subscriptions={orgSubscriptions} t={t} />
-                  ) : null}
-
-                  {activeOrgTab === "payments" ? (
-                    <OrgPaymentsTab
-                      getUserProfileUseCase={getUserProfileUseCase}
-                      isLoading={orgListsLoading}
-                      language={language}
-                      payments={orgPayments}
-                      t={t}
-                      onNavigate={onNavigate}
-                    />
-                  ) : null}
-                </section>
-              )
-            ) : (
-              <UserDetailsTabs
-                complaints={complaints}
-                complaintsError={complaintsError}
-                complaintsLoading={complaintsLoading}
-                documents={profile.documents}
-                getUserProfileUseCase={getUserProfileUseCase}
-                language={language}
-                onNavigate={onNavigate}
-                payments={profile.payments}
-                setViewingDoc={setViewingDoc}
-                subscriptions={individualSubscriptions}
-                subscriptionsError={individualSubsError}
-                subscriptionsLoading={individualSubsLoading}
-                onComplaintsReloadSilent={reloadComplaintsSilent}
-                t={t}
-                updateComplaintStatusUseCase={updateComplaintStatusUseCase}
-                user={profile.user}
-              />
-            )}
+            <UserDetailsTabs
+              complaints={complaints}
+              complaintsError={complaintsError}
+              complaintsLoading={complaintsLoading}
+              documents={profile.documents}
+              getUserProfileUseCase={getUserProfileUseCase}
+              language={language}
+              onNavigate={onNavigate}
+              payments={profile.payments}
+              setViewingDoc={setViewingDoc}
+              subscriptions={individualSubscriptions}
+              subscriptionsError={individualSubsError}
+              subscriptionsLoading={individualSubsLoading}
+              onComplaintsReloadSilent={reloadComplaintsSilent}
+              t={t}
+              updateComplaintStatusUseCase={updateComplaintStatusUseCase}
+              user={profile.user}
+            />
             <UserImageDialog
               open={isImageDialogOpen}
               onClose={() => setIsImageDialogOpen(false)}
@@ -833,6 +563,10 @@ function UserProfileHeader({ language, profile, showOrganizationShortcut, t, onA
           <dd>{user.email || "-"}</dd>
         </div>
         <div>
+          <dt>{t("usersManagement.role")}</dt>
+          <dd data-testid="user-details-profile-role">{formatRole(user.role, t)}</dd>
+        </div>
+        <div>
           <dt>{t("userDetails.dateJoined")}</dt>
           <dd>{formatDate(user.createdAt, language)}</dd>
         </div>
@@ -873,20 +607,33 @@ function UserImageDialog({ open, onClose, user, t }) {
         className="user-image-dialog"
         role="dialog"
         aria-modal="true"
-        aria-label={t("userDetails.imagePreview")}
+        aria-label={t("userDetails.profilePhotoLightbox")}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="user-image-dialog-header">
-          <h2>{t("userDetails.imagePreview")}</h2>
-          <button type="button" className="confirm-dialog-button confirm-dialog-button--neutral" data-testid="user-details-image-close" onClick={onClose}>
-            {t("common.closeAlert")}
+        <div className="user-image-dialog-toolbar">
+          <button
+            type="button"
+            className="user-image-dialog-close"
+            data-testid="user-details-image-close"
+            aria-label={t("common.close")}
+            onClick={onClose}
+          >
+            <X aria-hidden size={18} strokeWidth={2} />
           </button>
         </div>
-        {user.photoUrl ? (
-          <img className="user-image-preview" src={user.photoUrl} alt={user.displayName || "Profile image"} />
-        ) : (
-          <div className="user-image-preview user-image-preview--placeholder">{getInitials(getDisplayName(user))}</div>
-        )}
+        <div className="user-image-dialog-body">
+          {user.photoUrl ? (
+            <img
+              className="user-image-preview"
+              alt=""
+              decoding="async"
+              fetchPriority="high"
+              src={profilePhotoHighResUrl(user.photoUrl)}
+            />
+          ) : (
+            <div className="user-image-preview user-image-preview--placeholder">{getInitials(getDisplayName(user))}</div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -898,9 +645,7 @@ function EditUserDetailsDialog({ open, user, onCancel, onSubmit, isSaving, error
 
   useEffect(() => {
     if (open && user) {
-      setDisplayName(
-        user.displayName?.trim() || [user.firstName, user.lastName].filter(Boolean).join(" ").trim() || "",
-      );
+      setDisplayName(user.displayName?.trim() || "");
       setIsActive(user.isActive !== false);
     }
   }, [open, user]);
@@ -1012,13 +757,29 @@ function Avatar({ displayName, user, onClick }) {
 }
 
 function getDisplayName(user) {
-  return user.displayName || [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "User";
+  return user.displayName?.trim() || user.email || "User";
 }
 
 function getInitials(value) {
   const words = value.trim().split(/\s+/).filter(Boolean);
   const letters = words.length > 1 ? [words[0][0], words[1][0]] : [value[0], value[1]];
   return letters.filter(Boolean).join("").toUpperCase();
+}
+
+function formatRole(role, t) {
+  if (!role) return "-";
+  const normalizedRole = role.trim().toLowerCase().replace(/\s+/g, "_");
+  const translatedRole = t(`usersManagement.roles.${normalizedRole}`);
+
+  if (translatedRole !== `usersManagement.roles.${normalizedRole}`) {
+    return translatedRole;
+  }
+
+  return role
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function formatDate(date, language) {

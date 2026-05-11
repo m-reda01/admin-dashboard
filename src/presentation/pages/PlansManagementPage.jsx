@@ -14,7 +14,9 @@ import {
 } from "lucide-react";
 import { AppAlert } from "../components/AppAlert.jsx";
 import { DashboardLayout } from "../layouts/DashboardLayout.jsx";
+import { ManagementIndexLayout } from "../layouts/ManagementIndexLayout.jsx";
 import { useI18n } from "../i18n/I18nProvider.jsx";
+import { getPaginationPages } from "../utils/pagination.js";
 
 const PAGE_SIZE = 10;
 
@@ -236,10 +238,11 @@ export function PlansManagementPage({
 
   return (
     <DashboardLayout activePage="plans" onNavigate={onNavigate} session={session} title={t("plansManagement.title")}>
-      <div className="users-management-page plans-management-page">
-        <div className="users-toolbar">
-          <AppAlert message={alert?.message} variant={alert?.variant} onClose={() => setAlert(null)} />
-          <div className="users-toolbar-actions">
+      <ManagementIndexLayout
+        className="plans-management-page"
+        toolbarAlert={<AppAlert message={alert?.message} variant={alert?.variant} onClose={() => setAlert(null)} />}
+        toolbarActions={
+          <>
             <label className="users-search">
               <Search size={18} />
               <input
@@ -273,9 +276,9 @@ export function PlansManagementPage({
               <Plus size={18} aria-hidden />
               <span>{t("plansManagement.addPlan")}</span>
             </button>
-          </div>
-        </div>
-
+          </>
+        }
+      >
         <div className="users-table-shell plans-table-shell">
           <div className="users-table-scroll plans-table-scroll">
             <table className="plans-table" data-testid="plans-table">
@@ -446,7 +449,7 @@ export function PlansManagementPage({
             t={t}
           />
         )}
-      </div>
+      </ManagementIndexLayout>
     </DashboardLayout>
   );
 }
@@ -995,13 +998,4 @@ function formatPlanTarget(target, t) {
   if (target === "organization") return t("plansManagement.targets.organization");
   if (target === "both") return t("plansManagement.targets.both");
   return target || "—";
-}
-
-function getPaginationPages(current, total) {
-  const delta = 2;
-  const pages = new Set([1, total]);
-  for (let i = current - delta; i <= current + delta; i++) {
-    if (i >= 1 && i <= total) pages.add(i);
-  }
-  return Array.from(pages).sort((a, b) => a - b);
 }

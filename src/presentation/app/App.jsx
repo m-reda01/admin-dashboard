@@ -306,14 +306,10 @@ export function App() {
   } else if (appRoute === "user-details" && session) {
     content = (
       <UserDetailsPage
-        getOrganizationUseCase={getOrganizationUseCase}
         getUserProfileUseCase={getUserProfileUseCase}
         listComplaintsByUserIdUseCase={listComplaintsByUserIdUseCase}
         updateComplaintStatusUseCase={updateComplaintStatusUseCase}
-        listOrganizationDocumentsUseCase={listOrganizationDocumentsUseCase}
-        listOrganizationMembersUseCase={listOrganizationMembersUseCase}
         listOrganizationSubscriptionsUseCase={listOrganizationSubscriptionsUseCase}
-        listPaymentsUseCase={listPaymentsUseCase}
         updateUserUseCase={updateUserUseCase}
         session={session}
         userId={getRouteUserId()}

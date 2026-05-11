@@ -36,20 +36,23 @@ function computePaidSampleWindow(payments, timelineDays) {
 
 export function HomePage({ getAdminDashboardOverviewUseCase, onNavigate, session }) {
   const { language, t } = useI18n();
-  const { colorMode, primaryColor } = useAdminTheme();
+  const { colorMode, primaryColor, themePreset } = useAdminTheme();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [timelineDays, setTimelineDays] = useState(30);
 
-  const chartTheme = useMemo(
-    () => ({
-      axis: colorMode === "dark" ? "#94a3b8" : "#64748b",
-      grid: colorMode === "dark" ? "#334155" : "#e2e8f0",
-      accent: primaryColor || "#6366f1",
-    }),
-    [colorMode, primaryColor],
-  );
+  const chartTheme = useMemo(() => {
+    const root = typeof document !== "undefined" ? document.documentElement : null;
+    const cs = root && typeof getComputedStyle === "function" ? getComputedStyle(root) : null;
+    const axisVar = cs?.getPropertyValue("--chart-axis").trim() ?? "";
+    const gridVar = cs?.getPropertyValue("--chart-grid").trim() ?? "";
+    return {
+      axis: axisVar || (colorMode === "dark" ? "#9caeb8" : "#4d595e"),
+      grid: gridVar || (colorMode === "dark" ? "#262d30" : "#dbe6eb"),
+      accent: primaryColor || "#3385f0",
+    };
+  }, [colorMode, primaryColor, themePreset]);
 
   const chartModels = useMemo(() => {
     if (!data?.chartInputs) return null;

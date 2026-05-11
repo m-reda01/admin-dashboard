@@ -10,7 +10,9 @@ import {
 } from "lucide-react";
 import { AppAlert } from "../components/AppAlert.jsx";
 import { DashboardLayout } from "../layouts/DashboardLayout.jsx";
+import { ManagementIndexLayout } from "../layouts/ManagementIndexLayout.jsx";
 import { useI18n } from "../i18n/I18nProvider.jsx";
+import { getPaginationPages } from "../utils/pagination.js";
 import {
   DocumentAvatarThumb,
   DocumentDetailsModal,
@@ -162,10 +164,11 @@ export function DocumentsManagementPage({
 
   return (
     <DashboardLayout activePage="documents" onNavigate={onNavigate} session={session} title={t("documentsManagement.title")}>
-      <div className="users-management-page plans-management-page documents-management-page">
-        <div className="users-toolbar">
-          <AppAlert message={alert?.message} variant={alert?.variant} onClose={() => setAlert(null)} />
-          <div className="users-toolbar-actions">
+      <ManagementIndexLayout
+        className="plans-management-page documents-management-page"
+        toolbarAlert={<AppAlert message={alert?.message} variant={alert?.variant} onClose={() => setAlert(null)} />}
+        toolbarActions={
+          <>
             <label className="users-search">
               <Search size={18} />
               <input
@@ -195,9 +198,9 @@ export function DocumentsManagementPage({
                 {t("documentsManagement.deleteSelected", { count: selectedDocs.length })}
               </button>
             )}
-          </div>
-        </div>
-
+          </>
+        }
+      >
         <div className="users-table-shell plans-table-shell">
           <div className="users-table-scroll plans-table-scroll">
             <table className="plans-table documents-table" data-testid="documents-table">
@@ -394,20 +397,9 @@ export function DocumentsManagementPage({
           t={t}
           language={language}
         />
-      </div>
+      </ManagementIndexLayout>
     </DashboardLayout>
   );
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getPaginationPages(currentPage, totalPages) {
-  const delta = 2;
-  const pages = new Set([1, totalPages]);
-  for (let i = currentPage - delta; i <= currentPage + delta; i++) {
-    if (i >= 1 && i <= totalPages) pages.add(i);
-  }
-  return Array.from(pages).sort((a, b) => a - b);
 }
 
 function formatDate(date, language) {

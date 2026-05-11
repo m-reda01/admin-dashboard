@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { AppAlert } from "../components/AppAlert.jsx";
 import { DashboardLayout } from "../layouts/DashboardLayout.jsx";
+import { ManagementIndexLayout } from "../layouts/ManagementIndexLayout.jsx";
 import { useI18n } from "../i18n/I18nProvider.jsx";
 import { isOrganizationScopedRole, userOrganizationLinkId } from "../users/userOrganizationContext.js";
 
@@ -261,14 +262,12 @@ export function UsersManagementPage({
 
   return (
     <DashboardLayout activePage="users" onNavigate={onNavigate} session={session} title={t("usersManagement.title")}>
-      <div className="users-management-page">
-        <div className="users-toolbar">
-          <AppAlert
-            message={alert?.message}
-            variant={alert?.variant}
-            onClose={() => setAlert(null)}
-          />
-          <div className="users-toolbar-actions">
+      <ManagementIndexLayout
+        toolbarAlert={
+          <AppAlert message={alert?.message} variant={alert?.variant} onClose={() => setAlert(null)} />
+        }
+        toolbarActions={
+          <>
             <label className="users-search">
               <Search size={18} />
               <input
@@ -302,9 +301,9 @@ export function UsersManagementPage({
                 {t("usersManagement.deleteSelected", { count: selectedUsers.length })}
               </button>
             )}
-          </div>
-        </div>
-
+          </>
+        }
+      >
         <div className="users-table-shell">
           <div className="users-table-scroll">
             <table className="users-table">
@@ -479,7 +478,7 @@ export function UsersManagementPage({
           t={t}
           user={editingUser}
         />
-      </div>
+      </ManagementIndexLayout>
     </DashboardLayout>
   );
 }
@@ -688,12 +687,7 @@ function StatusPill({ tone, value }) {
 }
 
 function getDisplayName(user) {
-  return (
-    user.displayName ||
-    [user.firstName, user.lastName].filter(Boolean).join(" ") ||
-    user.email ||
-    "User"
-  );
+  return user.displayName?.trim() || user.email || "User";
 }
 
 function getInitials(value) {

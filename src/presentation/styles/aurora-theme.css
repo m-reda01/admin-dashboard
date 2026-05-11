@@ -1,0 +1,306 @@
+/**
+ * Semantic tokens aligned with admin/src/theme (Aurora palettes).
+ * Selectors use html[data-theme] + html[data-theme-preset] from AdminThemeProvider.
+ */
+
+:root {
+  --ink: #1b2124;
+  --muted: #4d595e;
+  --soft: #ebf2f5;
+  --line: #c3d3db;
+  --surface: #ffffff;
+  --page: #f7fafc;
+  --radius: 8px;
+  --brand-soft: rgba(51, 133, 240, 0.15);
+  --theme-bg: #f7fafc;
+  --theme-bg-soft: #f7fafc;
+  --theme-bg-elevated: #ebf2f5;
+  --theme-border: #c3d3db;
+  --theme-border-subtle: #dbe6eb;
+  --theme-danger: #d02241;
+  --theme-primary-contrast: #ffffff;
+  --theme-primary-soft: rgba(51, 133, 240, 0.15);
+  --theme-text: #1b2124;
+  --theme-text-muted: #4d595e;
+  --theme-text-soft: #9caeb8;
+  --chart-axis: #4d595e;
+  --chart-grid: #dbe6eb;
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
+html[data-theme="light"][data-theme-preset="luxury"] {
+  --ink: #272424;
+  --muted: #575454;
+  --soft: #f3f1f1;
+  --line: #c9c6c6;
+  --surface: #fdfbfb;
+  --page: #fdfbfb;
+  --theme-bg: #fdfbfb;
+  --theme-bg-soft: #f3f1f1;
+  --theme-bg-elevated: #e7e5e5;
+  --theme-border: #c9c6c6;
+  --theme-border-subtle: #dcdada;
+  --theme-text: #272424;
+  --theme-text-muted: #575454;
+  --theme-text-soft: #a8a5a5;
+  --chart-axis: #575454;
+  --chart-grid: #dcdada;
+}
+
+html[data-theme="light"][data-theme-preset="retro"] {
+  --ink: #3b3a37;
+  --muted: #6d6b65;
+  --soft: #f3eddf;
+  --line: #c6c1b4;
+  --surface: #f1e7cf;
+  --page: #f1e7cf;
+  --theme-bg: #f1e7cf;
+  --theme-bg-soft: #f3eddf;
+  --theme-bg-elevated: #e0d9c8;
+  --theme-border: #c6c1b4;
+  --theme-border-subtle: #d2cec1;
+  --theme-text: #3b3a37;
+  --theme-text-muted: #6d6b65;
+  --theme-text-soft: #afaba0;
+  --chart-axis: #6d6b65;
+  --chart-grid: #d2cec1;
+}
+
+html[data-theme="light"][data-theme-preset="arctic"] {
+  --ink: #2f3534;
+  --muted: #616964;
+  --soft: #e3f3f4;
+  --line: #b7c7c5;
+  --surface: #f1f9fb;
+  --page: #f1f9fb;
+  --theme-bg: #f1f9fb;
+  --theme-bg-soft: #e3f3f4;
+  --theme-bg-elevated: #d3e4e7;
+  --theme-border: #b7c7c5;
+  --theme-border-subtle: #c5d6d6;
+  --theme-text: #2f3534;
+  --theme-text-muted: #616964;
+  --theme-text-soft: #a0aaa8;
+  --chart-axis: #616964;
+  --chart-grid: #c5d6d6;
+}
+
+html[data-theme="light"][data-theme-preset="nature"] {
+  --ink: #2e2d2a;
+  --muted: #63615a;
+  --soft: #f0eee6;
+  --line: #c8c7c0;
+  --surface: #fcf9f1;
+  --page: #fcf9f1;
+  --theme-bg: #fcf9f1;
+  --theme-bg-soft: #f0eee6;
+  --theme-bg-elevated: #e1dfda;
+  --theme-border: #c8c7c0;
+  --theme-border-subtle: #d7d5d0;
+  --theme-text: #2e2d2a;
+  --theme-text-muted: #63615a;
+  --theme-text-soft: #afada5;
+  --chart-axis: #63615a;
+  --chart-grid: #d7d5d0;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #ebf2f5;
+  --muted: #9caeb8;
+  --soft: #111417;
+  --line: #262d30;
+  --surface: #06080a;
+  --page: #06080a;
+  --brand-soft: rgba(88, 155, 243, 0.2);
+  --theme-bg: #06080a;
+  --theme-bg-soft: #111417;
+  --theme-bg-elevated: #1b2124;
+  --theme-border: #262d30;
+  --theme-border-subtle: #111417;
+  --theme-danger: #d84a63;
+  --theme-text: #ebf2f5;
+  --theme-text-muted: #9caeb8;
+  --theme-text-soft: #77878f;
+  --theme-primary-contrast: #06080a;
+  --theme-primary-soft: rgba(88, 155, 243, 0.2);
+  --chart-axis: #9caeb8;
+  --chart-grid: #262d30;
+}
+
+html[data-theme="dark"][data-theme-preset="ember"] {
+  --surface: #282136;
+  --page: #282136;
+  --theme-bg: #282136;
+  --theme-bg-soft: #312a3f;
+  --theme-bg-elevated: #413b4e;
+  --theme-border: #4c4658;
+  --theme-border-subtle: #312a3f;
+  --line: #4c4658;
+  --soft: #312a3f;
+  --theme-text: #eeebf3;
+  --theme-text-muted: #c4c0cd;
+  --theme-text-soft: #837e8d;
+  --muted: #c4c0cd;
+  --ink: #eeebf3;
+  --chart-axis: #c4c0cd;
+  --chart-grid: #4c4658;
+}
+
+html[data-theme="dark"][data-theme-preset="dracula"] {
+  --surface: #18161f;
+  --page: #18161f;
+  --theme-bg: #18161f;
+  --theme-bg-soft: #22202b;
+  --theme-bg-elevated: #36333e;
+  --theme-border: #44424c;
+  --theme-border-subtle: #22202b;
+  --line: #44424c;
+  --soft: #22202b;
+  --theme-text: #ececf3;
+  --theme-text-muted: #c5c3cb;
+  --theme-text-soft: #807e87;
+  --muted: #c5c3cb;
+  --ink: #ececf3;
+  --chart-axis: #c5c3cb;
+  --chart-grid: #44424c;
+}
+
+html[data-theme="dark"][data-theme-preset="midnight"] {
+  --surface: #1a1f2e;
+  --page: #1a1f2e;
+  --theme-bg: #1a1f2e;
+  --theme-bg-soft: #232938;
+  --theme-bg-elevated: #313645;
+  --theme-border: #424859;
+  --theme-border-subtle: #232938;
+  --line: #424859;
+  --soft: #232938;
+  --theme-text: #dadce5;
+  --theme-text-muted: #bfc2cc;
+  --theme-text-soft: #818591;
+  --muted: #bfc2cc;
+  --ink: #dadce5;
+  --chart-axis: #bfc2cc;
+  --chart-grid: #424859;
+}
+
+html[data-theme="dark"] * {
+  scrollbar-color: #4d595e #111417;
+}
+
+html[data-theme="dark"] *::-webkit-scrollbar-track {
+  background: #111417;
+}
+
+html[data-theme="dark"] *::-webkit-scrollbar-thumb {
+  background: #4d595e;
+  border: 2px solid #111417;
+}
+
+html[data-theme="light"] * {
+  scrollbar-color: #c3d3db #f7fafc;
+}
+
+html[data-theme="light"] *::-webkit-scrollbar-track {
+  background: #f7fafc;
+}
+
+html[data-theme="light"] *::-webkit-scrollbar-thumb {
+  background: #c3d3db;
+  border: 2px solid #f7fafc;
+}
+
+html[data-theme="light"][data-theme-preset="luxury"] * {
+  scrollbar-color: #c9c6c6 #fdfbfb;
+}
+
+html[data-theme="light"][data-theme-preset="luxury"] *::-webkit-scrollbar-track {
+  background: #fdfbfb;
+}
+
+html[data-theme="light"][data-theme-preset="luxury"] *::-webkit-scrollbar-thumb {
+  background: #c9c6c6;
+  border: 2px solid #fdfbfb;
+}
+
+html[data-theme="light"][data-theme-preset="retro"] * {
+  scrollbar-color: #c6c1b4 #f1e7cf;
+}
+
+html[data-theme="light"][data-theme-preset="retro"] *::-webkit-scrollbar-track {
+  background: #f1e7cf;
+}
+
+html[data-theme="light"][data-theme-preset="retro"] *::-webkit-scrollbar-thumb {
+  background: #c6c1b4;
+  border: 2px solid #f1e7cf;
+}
+
+html[data-theme="light"][data-theme-preset="arctic"] * {
+  scrollbar-color: #b7c7c5 #f1f9fb;
+}
+
+html[data-theme="light"][data-theme-preset="arctic"] *::-webkit-scrollbar-track {
+  background: #f1f9fb;
+}
+
+html[data-theme="light"][data-theme-preset="arctic"] *::-webkit-scrollbar-thumb {
+  background: #b7c7c5;
+  border: 2px solid #f1f9fb;
+}
+
+html[data-theme="light"][data-theme-preset="nature"] * {
+  scrollbar-color: #c8c7c0 #fcf9f1;
+}
+
+html[data-theme="light"][data-theme-preset="nature"] *::-webkit-scrollbar-track {
+  background: #fcf9f1;
+}
+
+html[data-theme="light"][data-theme-preset="nature"] *::-webkit-scrollbar-thumb {
+  background: #c8c7c0;
+  border: 2px solid #fcf9f1;
+}
+
+html[data-theme="dark"][data-theme-preset="ember"] * {
+  scrollbar-color: #5e5969 #312a3f;
+}
+
+html[data-theme="dark"][data-theme-preset="ember"] *::-webkit-scrollbar-track {
+  background: #312a3f;
+}
+
+html[data-theme="dark"][data-theme-preset="ember"] *::-webkit-scrollbar-thumb {
+  background: #5e5969;
+  border: 2px solid #312a3f;
+}
+
+html[data-theme="dark"][data-theme-preset="dracula"] * {
+  scrollbar-color: #595760 #22202b;
+}
+
+html[data-theme="dark"][data-theme-preset="dracula"] *::-webkit-scrollbar-track {
+  background: #22202b;
+}
+
+html[data-theme="dark"][data-theme-preset="dracula"] *::-webkit-scrollbar-thumb {
+  background: #595760;
+  border: 2px solid #22202b;
+}
+
+html[data-theme="dark"][data-theme-preset="midnight"] * {
+  scrollbar-color: #585d6b #232938;
+}
+
+html[data-theme="dark"][data-theme-preset="midnight"] *::-webkit-scrollbar-track {
+  background: #232938;
+}
+
+html[data-theme="dark"][data-theme-preset="midnight"] *::-webkit-scrollbar-thumb {
+  background: #585d6b;
+  border: 2px solid #232938;
+}

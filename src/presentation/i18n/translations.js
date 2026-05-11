@@ -1,6 +1,7 @@
 export const translations = {
   en: {
     common: {
+      close: "Close",
       closeAlert: "Close alert",
       english: "English",
       arabicSaudi: "Saudi Arabic",
@@ -751,6 +752,7 @@ export const translations = {
       title: "Users management",
       profile: "User profile",
       breadcrumbLabel: "Breadcrumb",
+      profilePhotoLightbox: "Profile photo",
       emailAddress: "Email address",
       status: "Subscription",
       walletBalance: "Wallet balance",
@@ -834,6 +836,7 @@ export const translations = {
   },
   ar: {
     common: {
+      close: "إغلاق",
       closeAlert: "إغلاق التنبيه",
       english: "الإنجليزية",
       arabicSaudi: "العربية السعودية",
@@ -1584,6 +1587,7 @@ export const translations = {
       title: "إدارة المستخدمين",
       profile: "ملف المستخدم",
       breadcrumbLabel: "مسار الصفحة",
+      profilePhotoLightbox: "صورة الملف الشخصي",
       emailAddress: "البريد الإلكتروني",
       status: "الاشتراك",
       walletBalance: "رصيد المحفظة",

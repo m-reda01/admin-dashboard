@@ -13,7 +13,9 @@ import {
   formatComplaintDate,
 } from "../complaints/complaintAdminShared.jsx";
 import { DashboardLayout } from "../layouts/DashboardLayout.jsx";
+import { ManagementIndexLayout } from "../layouts/ManagementIndexLayout.jsx";
 import { useI18n } from "../i18n/I18nProvider.jsx";
+import { getPaginationPages } from "../utils/pagination.js";
 
 const PAGE_SIZE = 10;
 const STATUS_FILTER_PRESETS = ["open", "pending", "resolved", "closed", "rejected"];
@@ -150,9 +152,11 @@ export function ComplaintsManagementPage({ listComplaintsUseCase, session, updat
 
   return (
     <DashboardLayout activePage="complaints" onNavigate={onNavigate} session={session} title={t("complaintsManagement.title")}>
-      <div className="users-management-page plans-management-page documents-management-page" data-testid="complaints-management-page">
-        <div className="users-toolbar">
-          <div className="users-toolbar-actions">
+      <ManagementIndexLayout
+        className="plans-management-page documents-management-page"
+        data-testid="complaints-management-page"
+        toolbarActions={
+          <>
             <label className="users-search">
               <Search size={18} aria-hidden />
               <input
@@ -180,9 +184,9 @@ export function ComplaintsManagementPage({ listComplaintsUseCase, session, updat
               </select>
               <ChevronDown size={16} aria-hidden />
             </label>
-          </div>
-        </div>
-
+          </>
+        }
+      >
         <div className="users-table-shell plans-table-shell">
           <div className="users-table-scroll plans-table-scroll">
             <table className="plans-table documents-table documents-table--complaints-list" data-testid="complaints-management-table">
@@ -384,18 +388,9 @@ export function ComplaintsManagementPage({ listComplaintsUseCase, session, updat
             updateComplaintStatusUseCase={updateComplaintStatusUseCase}
           />
         ) : null}
-      </div>
+      </ManagementIndexLayout>
     </DashboardLayout>
   );
-}
-
-function getPaginationPages(currentPage, totalPages) {
-  const delta = 2;
-  const pages = new Set([1, totalPages]);
-  for (let i = currentPage - delta; i <= currentPage + delta; i++) {
-    if (i >= 1 && i <= totalPages) pages.add(i);
-  }
-  return Array.from(pages).sort((a, b) => a - b);
 }
 
 function ComplaintsTableShimmerRows({ rowCount }) {

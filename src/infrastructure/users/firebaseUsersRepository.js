@@ -93,7 +93,6 @@ export class FirebaseUsersRepository {
     const batch = writeBatch(db);
     const payload = {
       displayName: user.displayName.trim(),
-      firstName: user.displayName.trim(),
       isActive: Boolean(user.isActive),
       role: user.role,
       ...(typeof user.subscriptionPlan !== "undefined" ? { subscriptionPlan: user.subscriptionPlan } : {}),
@@ -122,7 +121,6 @@ export class FirebaseUsersRepository {
     return {
       ...user,
       displayName: payload.displayName,
-      firstName: payload.firstName,
       isActive: payload.isActive,
       role: payload.role,
       updatedAt: new Date(),
@@ -194,10 +192,8 @@ function mapUserDocument(id, data) {
     displayName: data.displayName ?? "",
     email: data.email ?? "",
     emailVerified: Boolean(data.emailVerified),
-    firstName: data.firstName ?? "",
     isActive: Boolean(data.isActive),
     lastLoginAt: toDate(data.lastLoginAt),
-    lastName: data.lastName ?? "",
     orgId: data.orgId ?? null,
     photoUrl: data.photoUrl ?? "",
     role: data.role ?? "",

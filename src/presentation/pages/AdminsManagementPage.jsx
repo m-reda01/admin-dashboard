@@ -4,6 +4,7 @@ import { AdminRole } from "../../domain/auth/adminSession.js";
 import { canMutateAdmins, canViewAdminsPage } from "../../domain/auth/adminPermissions.js";
 import { AppAlert } from "../components/AppAlert.jsx";
 import { DashboardLayout } from "../layouts/DashboardLayout.jsx";
+import { ManagementIndexLayout } from "../layouts/ManagementIndexLayout.jsx";
 import { useI18n } from "../i18n/I18nProvider.jsx";
 
 export function AdminsManagementPage({
@@ -159,13 +160,14 @@ export function AdminsManagementPage({
 
   return (
     <DashboardLayout activePage="admins" onNavigate={onNavigate} session={session} title={t("adminsManagement.title")}>
-      <div className="dashboard-content users-management-page admins-management-page" data-testid="admins-management-page">
-        {alert ? (
-          <AppAlert variant={alert.variant} message={alert.message} onClose={() => setAlert(null)} />
-        ) : null}
-
-        <div className="users-toolbar">
-          <div className="users-toolbar-actions">
+      <ManagementIndexLayout
+        className="dashboard-content admins-management-page"
+        data-testid="admins-management-page"
+        toolbarAlert={
+          alert ? <AppAlert variant={alert.variant} message={alert.message} onClose={() => setAlert(null)} /> : null
+        }
+        toolbarActions={
+          <>
             <label className="users-search-field">
               <Search size={18} aria-hidden />
               <input
@@ -182,17 +184,19 @@ export function AdminsManagementPage({
                 {t("adminsManagement.addAdmin")}
               </button>
             ) : null}
-          </div>
-        </div>
-
-        {!mayMutate ? <p className="admins-read-only-hint">{t("adminsManagement.readOnlyHint")}</p> : null}
-
-        {error ? (
-          <p className="users-error-banner" role="alert">
-            {error}
-          </p>
-        ) : null}
-
+          </>
+        }
+        afterToolbar={
+          <>
+            {!mayMutate ? <p className="admins-read-only-hint">{t("adminsManagement.readOnlyHint")}</p> : null}
+            {error ? (
+              <p className="users-error-banner" role="alert">
+                {error}
+              </p>
+            ) : null}
+          </>
+        }
+      >
         <div className="users-table-card">
           <table className="users-table">
             <thead>
@@ -312,7 +316,7 @@ export function AdminsManagementPage({
             </div>
           </div>
         ) : null}
-      </div>
+      </ManagementIndexLayout>
     </DashboardLayout>
   );
 }

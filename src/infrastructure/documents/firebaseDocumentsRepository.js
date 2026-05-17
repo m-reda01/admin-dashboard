@@ -2,11 +2,13 @@ import {
   collection,
   deleteDoc,
   doc,
+  documentId,
   getDocs,
   limit,
   orderBy,
   query,
   serverTimestamp,
+  startAfter,
   updateDoc,
   where,
 } from "firebase/firestore";
@@ -23,28 +25,103 @@ function mapDocSnap(docSnap) {
 }
 
 export class FirebaseDocumentsRepository {
-  async listDocuments({ pageSize = 50 } = {}) {
+  async listDocumentsPage({ pageSize = 50, cursor = null } = {}) {
     const { db } = getFirebaseServices();
     const documentsRef = collection(db, "documents");
-    const q = query(documentsRef, orderBy("createdAt", "desc"), limit(pageSize));
+    const safeLimit = Math.min(Math.max(pageSize, 1), 500);
+    let q = query(
+      documentsRef,
+      orderBy("createdAt", "desc"),
+      orderBy(documentId(), "desc"),
+      limit(safeLimit),
+    );
+    if (cursor?.createdAt && cursor?.id) {
+      q = query(q, startAfter(cursor.createdAt, cursor.id));
+    }
     const snapshot = await getDocs(q);
-
-    return snapshot.docs.map(mapDocSnap);
+    const items = snapshot.docs.map(mapDocSnap);
+    const last = snapshot.docs[snapshot.docs.length - 1] ?? null;
+    return {
+      items,
+      hasMore: snapshot.docs.length === safeLimit,
+      cursor: last
+        ? {
+            id: last.id,
+            createdAt: last.get("createdAt") ?? null,
+          }
+        : null,
+    };
   }
 
-  async listDocumentsByOrganizationId({ organizationId, pageSize = 100 } = {}) {
+  async listDocuments({ pageSize = 50 } = {}) {
+    const page = await this.listDocumentsPage({ pageSize });
+    return page.items;
+  }
+
+  async listDocumentsByOrganizationIdPage({
+    organizationId,
+    pageSize = 100,
+    cursor = null,
+  } = {}) {
     const orgId = String(organizationId ?? "").trim();
     if (!orgId) throw new Error("organizationId is required.");
     const { db } = getFirebaseServices();
     const documentsRef = collection(db, "documents");
-    const q = query(
+    const safeLimit = Math.min(Math.max(pageSize, 1), 500);
+    let q = query(
       documentsRef,
-      where("organizationId", "==", orgId),
+      where("orgId", "==", orgId),
       orderBy("createdAt", "desc"),
-      limit(pageSize),
+      orderBy(documentId(), "desc"),
+      limit(safeLimit),
     );
+    if (cursor?.createdAt && cursor?.id) {
+      q = query(q, startAfter(cursor.createdAt, cursor.id));
+    }
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(mapDocSnap);
+    let docs = snapshot.docs;
+    if (!cursor) {
+      const legacyQuery = query(
+        documentsRef,
+        where("organizationId", "==", orgId),
+        orderBy("createdAt", "desc"),
+        orderBy(documentId(), "desc"),
+        limit(safeLimit),
+      );
+      const legacySnapshot = await getDocs(legacyQuery);
+      const seenIds = new Set(docs.map((docSnap) => docSnap.id));
+      docs = [...docs];
+      for (const docSnap of legacySnapshot.docs) {
+        if (!seenIds.has(docSnap.id)) {
+          seenIds.add(docSnap.id);
+          docs.push(docSnap);
+        }
+      }
+      docs.sort((a, b) => {
+        const aCreated = a.get("createdAt")?.toMillis?.() ?? 0;
+        const bCreated = b.get("createdAt")?.toMillis?.() ?? 0;
+        if (aCreated !== bCreated) return bCreated - aCreated;
+        return b.id.localeCompare(a.id);
+      });
+      docs = docs.slice(0, safeLimit);
+    }
+    const items = docs.map(mapDocSnap);
+    const last = docs[docs.length - 1] ?? null;
+    return {
+      items,
+      hasMore: docs.length === safeLimit,
+      cursor: last
+        ? {
+            id: last.id,
+            createdAt: last.get("createdAt") ?? null,
+          }
+        : null,
+    };
+  }
+
+  async listDocumentsByOrganizationId({ organizationId, pageSize = 100 } = {}) {
+    const page = await this.listDocumentsByOrganizationIdPage({ organizationId, pageSize });
+    return page.items;
   }
 
   async deleteDocument({ documentId }) {
@@ -62,4 +139,3 @@ export class FirebaseDocumentsRepository {
     return { id: documentId, ...data };
   }
 }
-

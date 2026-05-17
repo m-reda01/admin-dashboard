@@ -1,4 +1,15 @@
-import { collection, deleteDoc, doc, getDocs, limit, orderBy, query } from "firebase/firestore";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  documentId,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  startAfter,
+  where,
+} from "firebase/firestore";
 import { getFirebaseServices } from "../firebase/firebaseClient.js";
 
 function isOrganizationPaymentShape(row) {
@@ -22,26 +33,40 @@ function paymentMatchesOrganizationFilters(row, filterOrganizationId, filterOrga
 }
 
 export class FirebasePaymentsRepository {
-  async listPayments({
+  async listPaymentsPage({
     pageSize = 100,
     filterOrganizationId = null,
     filterOrganizationOwnerUid = null,
+    cursor = null,
   } = {}) {
     const { db } = getFirebaseServices();
     const ref = collection(db, "payments");
-    const orgFilter =
-      Boolean(String(filterOrganizationId ?? "").trim()) ||
-      Boolean(String(filterOrganizationOwnerUid ?? "").trim());
-    const fetchLimit = orgFilter ? Math.min(Math.max(pageSize * 8, 400), 500) : pageSize;
-    const q = query(ref, orderBy("createdAt", "desc"), limit(fetchLimit));
-    const snapshot = await getDocs(q);
+    const safeLimit = Math.min(Math.max(pageSize, 1), 500);
+    const orgId = String(filterOrganizationId ?? "").trim();
+    const ownerUid = String(filterOrganizationOwnerUid ?? "").trim();
+    const hasOrgFilter = Boolean(orgId);
+    const hasOwnerFilter = Boolean(ownerUid);
 
+    let q = query(ref);
+    if (hasOrgFilter) {
+      q = query(q, where("orgId", "==", orgId));
+    } else if (hasOwnerFilter) {
+      q = query(q, where("userId", "==", ownerUid));
+    }
+    q = query(q, orderBy("createdAt", "desc"), orderBy(documentId(), "desc"), limit(safeLimit));
+    if (cursor?.createdAt && cursor?.id) {
+      q = query(q, startAfter(cursor.createdAt, cursor.id));
+    }
+
+    const snapshot = await getDocs(q);
     let rows = snapshot.docs.map((docSnap) => {
       const data = docSnap.data();
       return {
         id: docSnap.id,
         amount: data.amount ?? 0,
         cardBrand: data.cardBrand ?? "",
+        customerId: data.customerId ?? data.userId ?? "",
+        customerType: data.customerType ?? (data.orgId ? "organization" : "individual"),
         currency: data.currency ?? "SAR",
         description: data.description ?? "",
         failureMessage: data.failureMessage ?? "",
@@ -52,21 +77,44 @@ export class FirebasePaymentsRepository {
         paymentId: data.paymentId ?? "",
         providerCreatedAt: data.providerCreatedAt ?? "",
         purpose: data.purpose ?? "",
+        payerUid: data.payerUid ?? data.userId ?? "",
         status: data.status ?? "",
         userId: data.userId ?? "",
         createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
       };
     });
 
-    if (orgFilter) {
-      rows = rows
-        .filter((r) =>
-          paymentMatchesOrganizationFilters(r, filterOrganizationId, filterOrganizationOwnerUid),
-        )
-        .slice(0, pageSize);
+    if (hasOrgFilter || hasOwnerFilter) {
+      rows = rows.filter((r) =>
+        paymentMatchesOrganizationFilters(r, filterOrganizationId, filterOrganizationOwnerUid),
+      );
     }
 
-    return rows;
+    const last = snapshot.docs[snapshot.docs.length - 1] ?? null;
+    const cursorOut = last
+      ? {
+          id: last.id,
+          createdAt: last.get("createdAt") ?? null,
+        }
+      : null;
+    return {
+      items: rows,
+      hasMore: snapshot.docs.length === safeLimit,
+      cursor: cursorOut,
+    };
+  }
+
+  async listPayments({
+    pageSize = 100,
+    filterOrganizationId = null,
+    filterOrganizationOwnerUid = null,
+  } = {}) {
+    const page = await this.listPaymentsPage({
+      pageSize,
+      filterOrganizationId,
+      filterOrganizationOwnerUid,
+    });
+    return page.items;
   }
 
   async deletePayment(paymentDocId) {

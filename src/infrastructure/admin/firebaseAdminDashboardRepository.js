@@ -1,8 +1,24 @@
 import { collection, getCountFromServer, query, where } from "firebase/firestore";
+import { ComplaintStatus, PaymentStatus } from "../../domain/firestore/entityStatus.js";
 import { getFirebaseServices } from "../firebase/firebaseClient.js";
 
-const COMPLAINT_STATUSES = ["open", "pending", "resolved", "closed", "rejected"];
-const PAYMENT_STATUSES = ["paid", "pending", "failed", "refunded", "cancelled"];
+/** Includes legacy values until Firestore data is migrated. */
+const COMPLAINT_STATUSES = [
+  ComplaintStatus.open,
+  ComplaintStatus.inProgress,
+  "pending",
+  ComplaintStatus.resolved,
+  "closed",
+  ComplaintStatus.rejected,
+];
+
+const PAYMENT_STATUSES = [
+  PaymentStatus.pending,
+  PaymentStatus.paid,
+  PaymentStatus.failed,
+  PaymentStatus.refunded,
+  PaymentStatus.cancelled,
+];
 
 async function safeCount(collectionRefOrQuery) {
   try {
@@ -14,7 +30,17 @@ async function safeCount(collectionRefOrQuery) {
 }
 
 export class FirebaseAdminDashboardRepository {
+  constructor() {
+    this._countsCache = null;
+    this._countsCacheAtMs = 0;
+    this._countsCacheTtlMs = 60 * 1000;
+  }
+
   async getAggregateCounts() {
+    const now = Date.now();
+    if (this._countsCache && now - this._countsCacheAtMs < this._countsCacheTtlMs) {
+      return this._countsCache;
+    }
     const { db } = getFirebaseServices();
     const complaintsCol = collection(db, "complaints");
     const paymentsCol = collection(db, "payments");
@@ -44,7 +70,7 @@ export class FirebaseAdminDashboardRepository {
     const complaintsByStatus = Object.fromEntries(COMPLAINT_STATUSES.map((s, i) => [s, complaintSlice[i]]));
     const paymentsByStatus = Object.fromEntries(PAYMENT_STATUSES.map((s, i) => [s, paymentSlice[i]]));
 
-    return {
+    const result = {
       users,
       organizations,
       organizationsActive,
@@ -54,5 +80,8 @@ export class FirebaseAdminDashboardRepository {
       complaintsByStatus,
       paymentsByStatus,
     };
+    this._countsCache = result;
+    this._countsCacheAtMs = now;
+    return result;
   }
 }

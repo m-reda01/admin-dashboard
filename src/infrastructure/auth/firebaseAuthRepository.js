@@ -122,21 +122,24 @@ async function findAdminProfile(db, uid) {
     };
   }
 
-  const adminQuery = query(collection(db, "admins"), where("uid", "==", uid), limit(1));
+  const adminQuery = query(
+    collection(db, "admins"),
+    where("uid", "==", uid),
+    limit(1),
+  );
   const adminQuerySnapshot = await getDocs(adminQuery);
 
-  if (adminQuerySnapshot.empty) {
+  if (!adminQuerySnapshot.empty) {
+    const adminDocument = adminQuerySnapshot.docs[0];
     return {
-      ref: adminRefById,
-      data: null,
+      ref: adminDocument.ref,
+      data: adminDocument.data(),
     };
   }
 
-  const adminDocument = adminQuerySnapshot.docs[0];
-
   return {
-    ref: adminDocument.ref,
-    data: adminDocument.data(),
+    ref: adminRefById,
+    data: null,
   };
 }
 

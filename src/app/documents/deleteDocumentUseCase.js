@@ -1,9 +1,18 @@
 export class DeleteDocumentUseCase {
-  constructor({ documentsRepository }) {
+  constructor({ documentsRepository, adminAuditRepository }) {
     this.documentsRepository = documentsRepository;
+    this.adminAuditRepository = adminAuditRepository;
   }
 
   async execute({ documentId }) {
-    return this.documentsRepository.deleteDocument({ documentId });
+    const result = await this.documentsRepository.deleteDocument({ documentId });
+    this.adminAuditRepository
+      ?.logAction({
+        action: "document.delete",
+        targetType: "document",
+        targetId: documentId,
+      })
+      .catch(() => {});
+    return result;
   }
 }

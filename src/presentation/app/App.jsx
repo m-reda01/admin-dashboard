@@ -30,6 +30,7 @@ import { ListUsersUseCase } from "../../app/users/listUsersUseCase.js";
 import { UpdateUserUseCase } from "../../app/users/updateUserUseCase.js";
 import { FirebaseAdminDashboardRepository } from "../../infrastructure/admin/firebaseAdminDashboardRepository.js";
 import { FirebaseAdminsRepository } from "../../infrastructure/admins/firebaseAdminsRepository.js";
+import { FirebaseAdminAuditRepository } from "../../infrastructure/audit/firebaseAdminAuditRepository.js";
 import { FirebaseAuthRepository } from "../../infrastructure/auth/firebaseAuthRepository.js";
 import { FirebaseComplaintsRepository } from "../../infrastructure/complaints/firebaseComplaintsRepository.js";
 import { FirebaseDocumentsRepository } from "../../infrastructure/documents/firebaseDocumentsRepository.js";
@@ -54,6 +55,7 @@ import { AdminShellContext } from "./adminShellContext.jsx";
 
 export function App() {
   const authRepository = useMemo(() => new FirebaseAuthRepository(), []);
+  const adminAuditRepository = useMemo(() => new FirebaseAdminAuditRepository(), []);
   const organizationsRepository = useMemo(() => new FirebaseOrganizationsRepository(), []);
   const usersRepository = useMemo(() => new FirebaseUsersRepository(), []);
   const documentsRepository = useMemo(() => new FirebaseDocumentsRepository(), []);
@@ -77,8 +79,8 @@ export function App() {
     [organizationsRepository],
   );
   const updateOrganizationUseCase = useMemo(
-    () => new UpdateOrganizationUseCase({ organizationsRepository }),
-    [organizationsRepository],
+    () => new UpdateOrganizationUseCase({ organizationsRepository, adminAuditRepository }),
+    [organizationsRepository, adminAuditRepository],
   );
   const listOrganizationMembersUseCase = useMemo(
     () => new ListOrganizationMembersUseCase({ organizationsRepository }),
@@ -97,19 +99,22 @@ export function App() {
     [usersRepository],
   );
   const deleteUserUseCase = useMemo(
-    () => new DeleteUserUseCase({ usersRepository }),
-    [usersRepository],
+    () => new DeleteUserUseCase({ usersRepository, adminAuditRepository }),
+    [usersRepository, adminAuditRepository],
   );
   const updateUserUseCase = useMemo(
-    () => new UpdateUserUseCase({ usersRepository }),
-    [usersRepository],
+    () => new UpdateUserUseCase({ usersRepository, adminAuditRepository }),
+    [usersRepository, adminAuditRepository],
   );
   const sendPasswordResetUseCase = useMemo(
     () => new SendPasswordResetUseCase({ authRepository }),
     [authRepository],
   );
   const listDocumentsUseCase = useMemo(() => new ListDocumentsUseCase({ documentsRepository }), [documentsRepository]);
-  const deleteDocumentUseCase = useMemo(() => new DeleteDocumentUseCase({ documentsRepository }), [documentsRepository]);
+  const deleteDocumentUseCase = useMemo(
+    () => new DeleteDocumentUseCase({ documentsRepository, adminAuditRepository }),
+    [documentsRepository, adminAuditRepository],
+  );
   const listPaymentsUseCase = useMemo(() => new ListPaymentsUseCase({ paymentsRepository }), [paymentsRepository]);
   const listComplaintsByUserIdUseCase = useMemo(
     () => new ListComplaintsByUserIdUseCase({ complaintsRepository }),
@@ -120,30 +125,42 @@ export function App() {
     [complaintsRepository],
   );
   const updateComplaintStatusUseCase = useMemo(
-    () => new UpdateComplaintStatusUseCase({ complaintsRepository }),
-    [complaintsRepository],
+    () => new UpdateComplaintStatusUseCase({ complaintsRepository, adminAuditRepository }),
+    [complaintsRepository, adminAuditRepository],
   );
-  const deletePaymentUseCase = useMemo(() => new DeletePaymentUseCase({ paymentsRepository }), [paymentsRepository]);
+  const deletePaymentUseCase = useMemo(
+    () => new DeletePaymentUseCase({ paymentsRepository, adminAuditRepository }),
+    [paymentsRepository, adminAuditRepository],
+  );
   const listSubscriptionPlansUseCase = useMemo(
     () => new ListSubscriptionPlansUseCase({ subscriptionPlansRepository }),
     [subscriptionPlansRepository],
   );
   const createSubscriptionPlanUseCase = useMemo(
-    () => new CreateSubscriptionPlanUseCase({ subscriptionPlansRepository }),
-    [subscriptionPlansRepository],
+    () => new CreateSubscriptionPlanUseCase({ subscriptionPlansRepository, adminAuditRepository }),
+    [subscriptionPlansRepository, adminAuditRepository],
   );
   const updateSubscriptionPlanUseCase = useMemo(
-    () => new UpdateSubscriptionPlanUseCase({ subscriptionPlansRepository }),
-    [subscriptionPlansRepository],
+    () => new UpdateSubscriptionPlanUseCase({ subscriptionPlansRepository, adminAuditRepository }),
+    [subscriptionPlansRepository, adminAuditRepository],
   );
   const deleteSubscriptionPlanUseCase = useMemo(
-    () => new DeleteSubscriptionPlanUseCase({ subscriptionPlansRepository }),
-    [subscriptionPlansRepository],
+    () => new DeleteSubscriptionPlanUseCase({ subscriptionPlansRepository, adminAuditRepository }),
+    [subscriptionPlansRepository, adminAuditRepository],
   );
   const listAdminsUseCase = useMemo(() => new ListAdminsUseCase({ adminsRepository }), [adminsRepository]);
-  const createAdminUseCase = useMemo(() => new CreateAdminUseCase({ adminsRepository }), [adminsRepository]);
-  const updateAdminUseCase = useMemo(() => new UpdateAdminUseCase({ adminsRepository }), [adminsRepository]);
-  const deleteAdminUseCase = useMemo(() => new DeleteAdminUseCase({ adminsRepository }), [adminsRepository]);
+  const createAdminUseCase = useMemo(
+    () => new CreateAdminUseCase({ adminsRepository, adminAuditRepository }),
+    [adminsRepository, adminAuditRepository],
+  );
+  const updateAdminUseCase = useMemo(
+    () => new UpdateAdminUseCase({ adminsRepository, adminAuditRepository }),
+    [adminsRepository, adminAuditRepository],
+  );
+  const deleteAdminUseCase = useMemo(
+    () => new DeleteAdminUseCase({ adminsRepository, adminAuditRepository }),
+    [adminsRepository, adminAuditRepository],
+  );
   const getAdminDashboardOverviewUseCase = useMemo(
     () =>
       new GetAdminDashboardOverviewUseCase({

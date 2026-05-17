@@ -1,6 +1,7 @@
 export class DeleteUserUseCase {
-  constructor({ usersRepository }) {
+  constructor({ usersRepository, adminAuditRepository }) {
     this.usersRepository = usersRepository;
+    this.adminAuditRepository = adminAuditRepository;
   }
 
   async execute({ userId }) {
@@ -9,5 +10,12 @@ export class DeleteUserUseCase {
     }
 
     await this.usersRepository.deleteUser({ userId });
+    this.adminAuditRepository
+      ?.logAction({
+        action: "user.delete",
+        targetType: "user",
+        targetId: userId,
+      })
+      .catch(() => {});
   }
 }

@@ -1,9 +1,22 @@
 export class UpdateOrganizationUseCase {
-  constructor({ organizationsRepository }) {
+  constructor({ organizationsRepository, adminAuditRepository }) {
     this.organizationsRepository = organizationsRepository;
+    this.adminAuditRepository = adminAuditRepository;
   }
 
-  execute({ orgId, organization }) {
-    return this.organizationsRepository.updateOrganization({ orgId, organization });
+  async execute({ orgId, organization }) {
+    const result = await this.organizationsRepository.updateOrganization({ orgId, organization });
+    this.adminAuditRepository
+      ?.logAction({
+        action: "organization.update",
+        targetType: "organization",
+        targetId: orgId,
+        after: {
+          name: organization?.name ?? "",
+          isActive: organization?.isActive !== false,
+        },
+      })
+      .catch(() => {});
+    return result;
   }
 }

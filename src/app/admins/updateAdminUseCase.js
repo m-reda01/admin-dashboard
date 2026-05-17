@@ -1,8 +1,9 @@
 import { canMutateAdmins } from "../../domain/auth/adminPermissions.js";
 
 export class UpdateAdminUseCase {
-  constructor({ adminsRepository }) {
+  constructor({ adminsRepository, adminAuditRepository }) {
     this.adminsRepository = adminsRepository;
+    this.adminAuditRepository = adminAuditRepository;
   }
 
   async execute({ actorRole, actorUid, targetUid, displayName, adminRole, isActive }) {
@@ -14,5 +15,17 @@ export class UpdateAdminUseCase {
       throw new Error("You cannot deactivate your own account.");
     }
     await this.adminsRepository.updateAdmin(targetUid, { displayName, adminRole, isActive });
+    this.adminAuditRepository
+      ?.logAction({
+        action: "admin.update",
+        targetType: "admin",
+        targetId: targetUid,
+        after: {
+          displayName: displayName ?? null,
+          adminRole: adminRole ?? null,
+          isActive: typeof isActive === "boolean" ? isActive : null,
+        },
+      })
+      .catch(() => {});
   }
 }

@@ -3,7 +3,7 @@ export class ListOrganizationSubscriptionsUseCase {
     this.organizationsRepository = organizationsRepository;
   }
 
-  async execute({ ownerUid }) {
-    return this.organizationsRepository.listOrganizationSubscriptions({ ownerUid });
+  async execute({ orgId, ownerUid } = {}) {
+    return this.organizationsRepository.listOrganizationSubscriptions({ orgId, ownerUid });
   }
 }

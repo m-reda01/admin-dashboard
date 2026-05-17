@@ -1,16 +1,4 @@
-import {
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  getDocs,
-  limit,
-  query,
-  serverTimestamp,
-  setDoc,
-  updateDoc,
-  where,
-} from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { isAdminRole } from "../../domain/auth/adminSession.js";
 import { getFirebaseServices, getSecondaryProvisioningAuth } from "../firebase/firebaseClient.js";
@@ -121,10 +109,5 @@ async function resolveAdminDocRefByUid(db, adminUid) {
   const directRef = doc(db, "admins", adminUid);
   const directSnapshot = await getDoc(directRef);
   if (directSnapshot.exists()) return directRef;
-
-  const byUidQuery = query(collection(db, "admins"), where("uid", "==", adminUid), limit(1));
-  const byUidSnapshot = await getDocs(byUidQuery);
-  if (!byUidSnapshot.empty) return byUidSnapshot.docs[0].ref;
-
   return null;
 }

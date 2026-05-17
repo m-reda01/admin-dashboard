@@ -1,12 +1,13 @@
 /** Pure chart-ready datasets derived from Firestore-backed dashboard payloads. */
 
-const COMPLAINT_STATUS_ORDER = ["open", "pending", "resolved", "closed", "rejected"];
-const PAYMENT_STATUS_ORDER = ["paid", "pending", "failed", "refunded", "cancelled"];
+const COMPLAINT_STATUS_ORDER = ["open", "in_progress", "pending", "resolved", "closed", "rejected"];
+const PAYMENT_STATUS_ORDER = ["pending", "paid", "failed", "refunded", "cancelled"];
 const DOC_PIPELINE_ORDER = ["certified", "pending", "uploaded", "rejected"];
 
 export const STATUS_FILL = {
   complaint: {
     open: "#f59e0b",
+    in_progress: "#a855f7",
     pending: "#fb923c",
     resolved: "#22c55e",
     closed: "#14b8a6",

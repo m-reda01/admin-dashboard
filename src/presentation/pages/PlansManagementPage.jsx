@@ -73,7 +73,7 @@ export function PlansManagementPage({
     const q = searchQuery.trim().toLowerCase();
     if (!q) return plans;
     return plans.filter((p) => {
-      const blob = [p.name, p.description, p.tag, p.target, p.period, p.id].filter(Boolean).join(" ").toLowerCase();
+      const blob = [p.name, p.description, p.tag, p.audience, p.lifecycleStatus, p.id].filter(Boolean).join(" ").toLowerCase();
       return blob.includes(q);
     });
   }, [plans, searchQuery]);
@@ -344,19 +344,20 @@ export function PlansManagementPage({
                         <small className="plans-management-desc-preview">{plan.description}</small>
                       </td>
                       <td className="plans-table-price">
-                        {plan.price} {plan.currency ?? "SAR"}
+                        {plan.billing?.monthly?.amount ?? 0}{" "}
+                        {plan.billing?.monthly?.currency ?? "SAR"}
                       </td>
                       <td>
-                        <span className={`plans-badge plans-badge--period plans-badge--period-${plan.period}`}>
-                          {formatPlanPeriod(plan.period, t)}
+                        <span className="plans-badge plans-badge--period plans-badge--period-monthly">
+                          {t("plansManagement.periods.monthly")}
                         </span>
                       </td>
                       <td>
                         <span className="plans-target-cell">
                           <span className="plans-target-icons" aria-hidden>
-                            {plan.target === "organization" ? (
+                            {plan.audience === "organization" ? (
                               <BriefcaseBusiness size={16} />
-                            ) : plan.target === "both" ? (
+                            ) : plan.audience === "both" ? (
                               <>
                                 <BriefcaseBusiness size={16} />
                                 <UserRound size={16} />
@@ -365,11 +366,11 @@ export function PlansManagementPage({
                               <UserRound size={16} />
                             )}
                           </span>
-                          <span>{formatPlanTarget(plan.target, t)}</span>
+                          <span>{formatPlanTarget(plan.audience, t)}</span>
                         </span>
                       </td>
-                      <td>{plan.certificationsLimit}</td>
-                      <td>{plan.membersLimit}</td>
+                      <td>{plan.limits?.certifications ?? 0}</td>
+                      <td>{plan.limits?.members ?? 0}</td>
                       <td>
                         <div className="plans-actions-cell">
                           <button
@@ -501,9 +502,8 @@ function createEmptyPlanForm() {
   return {
     name: "",
     description: "",
-    price: "",
-    period: "monthly",
-    target: "organization",
+    monthlyPrice: "",
+    audience: "organization",
     tag: "",
     certificationsLimit: "0",
     membersLimit: "0",
@@ -519,18 +519,17 @@ function planToForm(plan) {
     id: plan.id,
     name: plan.name ?? "",
     description: plan.description ?? "",
-    price: String(plan.price ?? ""),
-    period: plan.period ?? "monthly",
-    target: plan.target ?? "individual",
+    monthlyPrice: String(plan.billing?.monthly?.amount ?? ""),
+    audience: plan.audience ?? "individual",
     tag: plan.tag ?? "",
-    certificationsLimit: String(plan.certificationsLimit ?? 0),
-    membersLimit: String(plan.membersLimit ?? 0),
+    certificationsLimit: String(plan.limits?.certifications ?? 0),
+    membersLimit: String(plan.limits?.members ?? 0),
     features: featRows.map((text, idx) => ({
       id: `${plan.id}-feat-${idx}`,
       text: String(text ?? ""),
     })),
-    extraCertificationPrice: String(plan.extraPrices?.certification ?? ""),
-    extraMemberPrice: String(plan.extraPrices?.member ?? ""),
+    extraCertificationPrice: String(plan.extras?.certificationUnitPrice ?? ""),
+    extraMemberPrice: String(plan.extras?.memberUnitPrice ?? ""),
   };
 }
 
@@ -542,17 +541,20 @@ function formToPayload(form) {
   return {
     name: form.name.trim(),
     description: form.description.trim(),
-    price: Number(form.price),
-    currency: "SAR",
-    period: form.period,
-    target: form.target,
+    audience: form.audience,
     tag: form.tag.trim(),
-    certificationsLimit: Number(form.certificationsLimit),
-    membersLimit: Number(form.membersLimit),
     features,
-    extraPrices: {
-      certification: Number(form.extraCertificationPrice || 0),
-      member: Number(form.extraMemberPrice || 0),
+    schemaVersion: 2,
+    billing: {
+      monthly: { amount: Number(form.monthlyPrice || 0), currency: "SAR" },
+    },
+    limits: {
+      certifications: Number(form.certificationsLimit),
+      members: Number(form.membersLimit),
+    },
+    extras: {
+      certificationUnitPrice: Number(form.extraCertificationPrice || 0),
+      memberUnitPrice: Number(form.extraMemberPrice || 0),
     },
   };
 }
@@ -573,7 +575,7 @@ function parseNonNegativeNumberField(raw, t, requiredKey, invalidKey) {
 function validatePlanForm(form, t) {
   if (!form.name.trim()) return t("plansManagement.validation.nameRequired");
   if (!form.description.trim()) return t("plansManagement.validation.descriptionRequired");
-  const priceStr = String(form.price ?? "").trim();
+  const priceStr = String(form.monthlyPrice ?? "").trim();
   if (priceStr === "") return t("plansManagement.validation.priceRequired");
   const priceNum = Number(priceStr);
   if (Number.isNaN(priceNum) || priceNum < 0) return t("plansManagement.validation.priceInvalid");
@@ -593,7 +595,6 @@ function validatePlanForm(form, t) {
     "plansManagement.validation.membersInvalid",
   );
   if (membersErr) return membersErr;
-
   if (countPlanFeatureRows(form) < 1) return t("plansManagement.validation.featuresRequired");
 
   return "";
@@ -816,7 +817,7 @@ function PlanFormDialog({ form: initialForm, isSaving, mode, onCancel, onSubmit,
                 *
               </span>
             </span>
-            <select aria-required="true" value={form.target} data-testid="plan-form-target" onChange={(e) => update("target", e.target.value)}>
+            <select aria-required="true" value={form.audience} data-testid="plan-form-target" onChange={(e) => update("audience", e.target.value)}>
               <option value="organization">{t("plansManagement.targets.organization")}</option>
               <option value="individual">{t("plansManagement.targets.individual")}</option>
               <option value="both">{t("plansManagement.targets.both")}</option>
@@ -836,9 +837,9 @@ function PlanFormDialog({ form: initialForm, isSaving, mode, onCancel, onSubmit,
               min="0"
               step="1"
               aria-required="true"
-              value={form.price}
+              value={form.monthlyPrice}
               data-testid="plan-form-price"
-              onChange={(e) => update("price", e.target.value)}
+              onChange={(e) => update("monthlyPrice", e.target.value)}
             />
           </label>
           <label className="plans-form-field">
@@ -849,12 +850,8 @@ function PlanFormDialog({ form: initialForm, isSaving, mode, onCancel, onSubmit,
                 *
               </span>
             </span>
-            <select aria-required="true" value={form.period} data-testid="plan-form-period" onChange={(e) => update("period", e.target.value)}>
-              <option value="monthly">{t("plansManagement.periods.monthly")}</option>
-              <option value="yearly">{t("plansManagement.periods.yearly")}</option>
-            </select>
+            <input value={t("plansManagement.periods.monthly")} disabled data-testid="plan-form-period" />
           </label>
-
           <label className="plans-form-field">
             <span>
               {t("plansManagement.fields.certify")}
@@ -913,7 +910,6 @@ function PlanFormDialog({ form: initialForm, isSaving, mode, onCancel, onSubmit,
               onChange={(e) => update("extraMemberPrice", e.target.value)}
             />
           </label>
-
           <label className="plans-form-field plans-form-field--full">
             <span>{t("plansManagement.fields.tag")}</span>
             <input value={form.tag} data-testid="plan-form-tag" onChange={(e) => update("tag", e.target.value)} />

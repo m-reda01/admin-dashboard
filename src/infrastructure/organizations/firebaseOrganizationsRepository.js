@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  documentId,
   getCountFromServer,
   getDoc,
   getDocs,
@@ -8,8 +9,8 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  startAfter,
   updateDoc,
-  where,
 } from "firebase/firestore";
 import { getFirebaseServices } from "../firebase/firebaseClient.js";
 
@@ -43,7 +44,7 @@ export class FirebaseOrganizationsRepository {
       throw new Error("Organization was not found.");
     }
     const org = mapOrganizationDocument(snap.id, snap.data());
-    const membersCount = await getOrganizationMembersCount(db, org.id);
+    const membersCount = resolveMembersCount(org);
     const ownerExtras = await fetchOwnerBlockchainSnapshot(db, org.ownerUid);
     return { ...org, membersCount, ...ownerExtras };
   }
@@ -56,53 +57,94 @@ export class FirebaseOrganizationsRepository {
   }
 
   /**
-   * Subscriptions are top-level `subscriptions/{customerId}` (same as Flutter wallet).
-   * Fallback: query by `customerId` if the doc id differs.
+   * Subscriptions are top-level `subscriptions/{customerId}` (doc id is source of truth).
    */
-  async listOrganizationSubscriptions({ ownerUid }) {
+  async listOrganizationSubscriptions({ orgId, ownerUid } = {}) {
+    const id = String(orgId ?? "").trim();
     const uid = String(ownerUid ?? "").trim();
-    if (!uid) return [];
+    if (!id && !uid) return [];
     const { db } = getFirebaseServices();
     try {
-      const direct = await getDoc(doc(db, "subscriptions", uid));
-      if (direct.exists()) {
+      const direct = id ? await getDoc(doc(db, "subscriptions", id)) : null;
+      if (direct?.exists()) {
         return [mapSubscriptionDocument(direct.id, direct.data())];
       }
-      const snapshot = await getDocs(
-        query(collection(db, "subscriptions"), where("customerId", "==", uid), limit(25)),
-      );
-      return snapshot.docs.map((s) => mapSubscriptionDocument(s.id, s.data()));
+      // Migration fallback only: legacy organization subscriptions used owner uid.
+      const legacy = uid ? await getDoc(doc(db, "subscriptions", uid)) : null;
+      if (!legacy?.exists()) {
+        return [];
+      }
+      const row = mapSubscriptionDocument(legacy.id, legacy.data());
+      if (row.customerType === "organization" || row.orgId === id || legacy.id === uid || !id) {
+        return [row];
+      }
+      return [];
     } catch {
       return [];
     }
   }
 
-  async listOrganizations({ pageSize = 50, withMembersCount = true } = {}) {
+  async listOrganizationsPage({
+    pageSize = 50,
+    withMembersCount = true,
+    cursor = null,
+  } = {}) {
     const { db } = getFirebaseServices();
-    const orgsQuery = query(
+    const safeLimit = Math.min(Math.max(pageSize, 1), 500);
+    let orgsQuery = query(
       collection(db, "orgs"),
       orderBy("createdAt", "desc"),
-      limit(pageSize),
+      orderBy(documentId(), "desc"),
+      limit(safeLimit),
     );
+    if (cursor?.createdAt && cursor?.id) {
+      orgsQuery = query(orgsQuery, startAfter(cursor.createdAt, cursor.id));
+    }
     const snapshot = await getDocs(orgsQuery);
 
-    if (!withMembersCount) {
-      return snapshot.docs.map((documentSnapshot) =>
-        mapOrganizationDocument(documentSnapshot.id, documentSnapshot.data()),
-      );
+    const items = snapshot.docs.map((documentSnapshot) => {
+      const org = mapOrganizationDocument(documentSnapshot.id, documentSnapshot.data());
+      if (!withMembersCount) {
+        return org;
+      }
+      return {
+        ...org,
+        membersCount: resolveMembersCount(org),
+      };
+    });
+    const last = snapshot.docs[snapshot.docs.length - 1] ?? null;
+    return {
+      items,
+      hasMore: snapshot.docs.length === safeLimit,
+      cursor: last
+        ? {
+            id: last.id,
+            createdAt: last.get("createdAt") ?? null,
+          }
+        : null,
+    };
+  }
+
+  async listOrganizations({ pageSize = 50, withMembersCount = true } = {}) {
+    const page = await this.listOrganizationsPage({ pageSize, withMembersCount });
+    return page.items;
+  }
+
+  async getOrganizationMembersCount({ orgId, useCacheField = true } = {}) {
+    const id = String(orgId ?? "").trim();
+    if (!id) return 0;
+    const { db } = getFirebaseServices();
+    if (useCacheField) {
+      const snap = await getDoc(doc(db, "orgs", id));
+      if (snap.exists()) {
+        const data = mapOrganizationDocument(snap.id, snap.data());
+        const cachedCount = resolveMembersCount(data);
+        if (cachedCount > 0) {
+          return cachedCount;
+        }
+      }
     }
-
-    return Promise.all(
-      snapshot.docs.map(async (documentSnapshot) => {
-        const org = mapOrganizationDocument(documentSnapshot.id, documentSnapshot.data());
-        const membersCount = await getOrganizationMembersCount(db, org.id);
-
-        return {
-          ...org,
-          membersCount,
-        };
-      }),
-    );
+    return getOrganizationMembersCount(db, id);
   }
 }
 
@@ -179,11 +221,14 @@ function toInt64(value) {
 function mapSubscriptionDocument(id, data) {
   return {
     id,
+    customerType: String(data.customerType ?? "").trim(),
     certificationsLimit: toInt64(data.certificationsLimit),
     certificationsUsed: toInt64(data.certificationsUsed),
     createdAt: toDate(data.createdAt),
     currentMembersCount: toInt64(data.currentMembersCount),
     customerId: String(data.customerId ?? "").trim(),
+    orgId: String(data.orgId ?? "").trim(),
+    ownerUid: String(data.ownerUid ?? "").trim(),
     endDate: toDate(data.endDate),
     extraCertificationsAmount: toInt64(data.extraCertificationsAmount),
     extraCertificationsCount: toInt64(data.extraCertificationsCount),
@@ -215,10 +260,16 @@ function mapOrganizationDocument(id, data) {
     planId: String(data.planId ?? "").trim(),
     quotaTotalDocs: Number(data.quotaTotalDocs ?? 0),
     quotaUsedDocs: Number(data.quotaUsedDocs ?? 0),
+    membersCount: Number(data.membersCount ?? data.currentMembersCount ?? 0),
     contractAddress: String(data.contractAddress ?? "").trim(),
     deploymentId: String(data.deploymentId ?? data.contractDeploymentId ?? "").trim(),
     contractStatus: String(data.contractStatus ?? data.contractState ?? "").trim(),
   };
+}
+
+function resolveMembersCount(org) {
+  const count = Number(org?.membersCount ?? 0);
+  return Number.isFinite(count) && count >= 0 ? count : 0;
 }
 
 function toDate(value) {

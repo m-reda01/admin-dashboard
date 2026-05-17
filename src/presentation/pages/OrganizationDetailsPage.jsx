@@ -357,12 +357,11 @@ export function OrganizationDetailsPage({
           const [nextMembers, nextDocs, nextSubs, nextPayments] = await Promise.all([
             listOrganizationMembersUseCase.execute({ orgId: organizationId }),
             listOrganizationDocumentsUseCase.execute({ organizationId: organizationId, pageSize: 100 }),
-            listOrganizationSubscriptionsUseCase.execute({ ownerUid }),
+            listOrganizationSubscriptionsUseCase.execute({ orgId: organizationId, ownerUid }),
             listPaymentsUseCase
               ? listPaymentsUseCase.execute({
                   pageSize: 100,
                   filterOrganizationId: organizationId,
-                  filterOrganizationOwnerUid: ownerUid,
                 })
               : Promise.resolve([]),
           ]);

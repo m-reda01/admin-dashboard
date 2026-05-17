@@ -1,8 +1,8 @@
 import {
   addDoc,
   collection,
-  deleteDoc,
   doc,
+  getDoc,
   getDocs,
   serverTimestamp,
   updateDoc,
@@ -37,8 +37,17 @@ export class FirebaseSubscriptionPlansRepository {
 
   async updatePlan(planId, planPayload) {
     const { db } = getFirebaseServices();
+    const docRef = doc(db, COLLECTION, planId);
+    const existing = await getDoc(docRef);
+    if (!existing.exists()) {
+      throw new Error("Subscription plan not found.");
+    }
+    const existingData = existing.data() ?? {};
+    if (String(existingData.lifecycleStatus ?? "").toLowerCase() === "retired") {
+      throw new Error("Retired plans cannot be modified.");
+    }
     const writeData = buildFirestoreFields(planPayload);
-    await updateDoc(doc(db, COLLECTION, planId), {
+    await updateDoc(docRef, {
       ...writeData,
       id: planId,
       updatedAt: serverTimestamp(),
@@ -48,53 +57,89 @@ export class FirebaseSubscriptionPlansRepository {
 
   async deletePlan(planId) {
     const { db } = getFirebaseServices();
-    await deleteDoc(doc(db, COLLECTION, planId));
+    await updateDoc(doc(db, COLLECTION, planId), {
+      isActive: false,
+      lifecycleStatus: "retired",
+      retiredAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
   }
 }
 
 function buildFirestoreFields(payload) {
+  const currency = String(payload.billing?.monthly?.currency ?? payload.currency ?? "SAR").trim() || "SAR";
+  const monthlyAmount = Number(payload.billing?.monthly?.amount ?? 0);
+  const audience = String(payload.audience ?? "individual").trim().toLowerCase();
+  const certificationsLimit = Number(payload.limits?.certifications ?? 0);
+  const membersLimit = Number(payload.limits?.members ?? 0);
+  const certificationUnitPrice = Number(payload.extras?.certificationUnitPrice ?? 0);
+  const memberUnitPrice = Number(payload.extras?.memberUnitPrice ?? 0);
+  const features = Array.isArray(payload.features) ? payload.features.map(String) : [];
+  const lifecycleStatus = String(payload.lifecycleStatus ?? "active").toLowerCase();
+  const isActive = payload.isActive !== false && lifecycleStatus !== "retired";
   return {
     name: String(payload.name ?? "").trim(),
     description: String(payload.description ?? "").trim(),
-    price: Number(payload.price ?? 0),
-    currency: String(payload.currency ?? "SAR").trim(),
-    period: String(payload.period ?? "monthly"),
-    target: String(payload.target ?? "individual"),
     isRecommended: Boolean(payload.isRecommended),
     tag: String(payload.tag ?? "").trim(),
     sortOrder: Number(payload.sortOrder ?? 0),
-    certificationsLimit: Number(payload.certificationsLimit ?? 0),
-    membersLimit: Number(payload.membersLimit ?? 0),
-    features: Array.isArray(payload.features) ? payload.features.map(String) : [],
-    extraPrices: {
-      certification: Number(payload.extraPrices?.certification ?? 0),
-      member: Number(payload.extraPrices?.member ?? 0),
+    features,
+    schemaVersion: 2,
+    isActive,
+    lifecycleStatus,
+    billing: {
+      monthly: {
+        amount: monthlyAmount,
+        currency,
+      },
     },
+    limits: {
+      certifications: certificationsLimit,
+      members: membersLimit,
+    },
+    extras: {
+      certificationUnitPrice,
+      memberUnitPrice,
+    },
+    audience,
+    retiredAt: lifecycleStatus === "retired" ? serverTimestamp() : null,
   };
 }
 
 function mapPlanDocument(id, data) {
-  const ep = data.extraPrices && typeof data.extraPrices === "object" ? data.extraPrices : {};
+  const billing = data.billing && typeof data.billing === "object" ? data.billing : {};
+  const monthly = billing.monthly && typeof billing.monthly === "object" ? billing.monthly : {};
+  const limits = data.limits && typeof data.limits === "object" ? data.limits : {};
+  const extras = data.extras && typeof data.extras === "object" ? data.extras : {};
   return {
     id,
-    certificationsLimit: Number(data.certificationsLimit ?? 0),
     createdAt: toDate(data.createdAt),
-    currency: data.currency ?? "SAR",
     description: data.description ?? "",
-    extraPrices: {
-      certification: Number(ep.certification ?? 0),
-      member: Number(ep.member ?? 0),
+    extras: {
+      certificationUnitPrice: Number(extras.certificationUnitPrice ?? 0),
+      memberUnitPrice: Number(extras.memberUnitPrice ?? 0),
     },
     features: Array.isArray(data.features) ? [...data.features] : [],
     isRecommended: data.isRecommended === true,
-    membersLimit: Number(data.membersLimit ?? 0),
     name: data.name ?? "",
-    period: data.period ?? "monthly",
-    price: Number(data.price ?? 0),
+    billing: {
+      monthly: {
+        amount: Number(monthly.amount ?? 0),
+        currency: monthly.currency ?? "SAR",
+      },
+    },
     sortOrder: Number(data.sortOrder ?? 0),
     tag: data.tag ?? "",
-    target: data.target ?? "individual",
+    audience: data.audience ?? "individual",
+    schemaVersion: Number(data.schemaVersion ?? 2),
+    isActive: data.isActive !== false,
+    lifecycleStatus: String(data.lifecycleStatus ?? "active"),
     updatedAt: toDate(data.updatedAt),
+    retiredAt: toDate(data.retiredAt),
+    limits: {
+      certifications: Number(limits.certifications ?? 0),
+      members: Number(limits.members ?? 0),
+    },
   };
 }
 

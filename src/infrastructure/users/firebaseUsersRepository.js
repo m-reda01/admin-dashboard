@@ -1,30 +1,52 @@
 import {
   collection,
   doc,
+  documentId,
   getDoc,
   getDocs,
   limit,
   orderBy,
   query,
   serverTimestamp,
+  startAfter,
   where,
   writeBatch,
 } from "firebase/firestore";
 import { getFirebaseServices } from "../firebase/firebaseClient.js";
 
 export class FirebaseUsersRepository {
-  async listUsers({ pageSize = 50 } = {}) {
+  async listUsersPage({ pageSize = 50, cursor = null } = {}) {
     const { db } = getFirebaseServices();
-    const usersQuery = query(
+    const safeLimit = Math.min(Math.max(pageSize, 1), 500);
+    let usersQuery = query(
       collection(db, "users"),
       orderBy("createdAt", "desc"),
-      limit(pageSize),
+      orderBy(documentId(), "desc"),
+      limit(safeLimit),
     );
+    if (cursor?.createdAt && cursor?.id) {
+      usersQuery = query(usersQuery, startAfter(cursor.createdAt, cursor.id));
+    }
     const snapshot = await getDocs(usersQuery);
-
-    return snapshot.docs.map((documentSnapshot) =>
+    const items = snapshot.docs.map((documentSnapshot) =>
       mapUserDocument(documentSnapshot.id, documentSnapshot.data()),
     );
+    const last = snapshot.docs[snapshot.docs.length - 1] ?? null;
+    return {
+      items,
+      hasMore: snapshot.docs.length === safeLimit,
+      cursor: last
+        ? {
+            id: last.id,
+            createdAt: last.get("createdAt") ?? null,
+          }
+        : null,
+    };
+  }
+
+  async listUsers({ pageSize = 50 } = {}) {
+    const page = await this.listUsersPage({ pageSize });
+    return page.items;
   }
 
   async getUserProfile({ userId }) {
@@ -108,6 +130,9 @@ export class FirebaseUsersRepository {
         memberRef,
         {
           displayName: payload.displayName,
+          email: String(user.email ?? "").trim(),
+          photoUrl: String(user.photoUrl ?? "").trim(),
+          phone: String(user.phone ?? "").trim(),
           status: payload.isActive ? "active" : "inactive",
           role: user.role === "org_owner" ? "owner" : "member",
           updatedAt: serverTimestamp(),
@@ -140,22 +165,32 @@ function createDeleteError(code, message) {
 
 async function getUserDocuments(db, uid) {
   const snapshot = await getDocs(
-    query(collection(db, "documents"), where("userId", "==", uid), limit(6)),
+    query(
+      collection(db, "documents"),
+      where("userId", "==", uid),
+      orderBy("createdAt", "desc"),
+      limit(6),
+    ),
   );
 
-  return snapshot.docs
-    .map((documentSnapshot) => mapDocument(documentSnapshot.id, documentSnapshot.data()))
-    .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+  return snapshot.docs.map((documentSnapshot) =>
+    mapDocument(documentSnapshot.id, documentSnapshot.data()),
+  );
 }
 
 async function getUserPayments(db, uid) {
   const snapshot = await getDocs(
-    query(collection(db, "payments"), where("userId", "==", uid), limit(7)),
+    query(
+      collection(db, "payments"),
+      where("userId", "==", uid),
+      orderBy("createdAt", "desc"),
+      limit(7),
+    ),
   );
 
-  return snapshot.docs
-    .map((documentSnapshot) => mapPayment(documentSnapshot.id, documentSnapshot.data()))
-    .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+  return snapshot.docs.map((documentSnapshot) =>
+    mapPayment(documentSnapshot.id, documentSnapshot.data()),
+  );
 }
 
 function mapDocument(id, data) {

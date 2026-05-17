@@ -1,4 +1,16 @@
-import { collection, doc, getDocs, limit, orderBy, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  documentId,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  serverTimestamp,
+  startAfter,
+  updateDoc,
+  where,
+} from "firebase/firestore";
 import { getFirebaseServices } from "../firebase/firebaseClient.js";
 
 export class FirebaseComplaintsRepository {
@@ -18,50 +30,79 @@ export class FirebaseComplaintsRepository {
   /**
    * @param {{ userId?: string, pageSize?: number }} params
    */
-  async listComplaintsByUserId({ userId, pageSize = 100 } = {}) {
+  async listComplaintsByUserIdPage({ userId, pageSize = 100, cursor = null } = {}) {
     const uid = String(userId ?? "").trim();
-    if (!uid) return [];
+    if (!uid) return { items: [], hasMore: false, cursor: null };
 
     const { db } = getFirebaseServices();
-    const snapshot = await getDocs(
-      query(collection(db, "complaints"), where("userId", "==", uid), limit(Math.min(Math.max(pageSize, 1), 500))),
+    const safeLimit = Math.min(Math.max(pageSize, 1), 500);
+    let q = query(
+      collection(db, "complaints"),
+      where("userId", "==", uid),
+      orderBy("createdAt", "desc"),
+      orderBy(documentId(), "desc"),
+      limit(safeLimit),
     );
-
+    if (cursor?.createdAt && cursor?.id) {
+      q = query(q, startAfter(cursor.createdAt, cursor.id));
+    }
+    const snapshot = await getDocs(q);
     const rows = snapshot.docs.map((documentSnapshot) =>
       mapComplaintDocument(documentSnapshot.id, documentSnapshot.data()),
     );
+    const last = snapshot.docs[snapshot.docs.length - 1] ?? null;
+    return {
+      items: rows,
+      hasMore: snapshot.docs.length === safeLimit,
+      cursor: last
+        ? {
+            id: last.id,
+            createdAt: last.get("createdAt") ?? null,
+          }
+        : null,
+    };
+  }
 
-    return rows.sort((a, b) => {
-      const tb = b.createdAt?.getTime?.() || 0;
-      const ta = a.createdAt?.getTime?.() || 0;
-      return tb - ta;
-    });
+  async listComplaintsByUserId({ userId, pageSize = 100 } = {}) {
+    const page = await this.listComplaintsByUserIdPage({ userId, pageSize });
+    return page.items;
   }
 
   /**
    * @param {{ pageSize?: number }} params
    */
-  async listComplaints({ pageSize = 200 } = {}) {
+  async listComplaintsPage({ pageSize = 200, cursor = null } = {}) {
     const { db } = getFirebaseServices();
     const safeLimit = Math.min(Math.max(pageSize, 1), 500);
-
-    try {
-      const qy = query(collection(db, "complaints"), orderBy("createdAt", "desc"), limit(safeLimit));
-      const snapshot = await getDocs(qy);
-      return snapshot.docs.map((documentSnapshot) =>
-        mapComplaintDocument(documentSnapshot.id, documentSnapshot.data()),
-      );
-    } catch {
-      const snapshot = await getDocs(query(collection(db, "complaints"), limit(safeLimit)));
-      const rows = snapshot.docs.map((documentSnapshot) =>
-        mapComplaintDocument(documentSnapshot.id, documentSnapshot.data()),
-      );
-      return rows.sort((a, b) => {
-        const tb = b.createdAt?.getTime?.() || 0;
-        const ta = a.createdAt?.getTime?.() || 0;
-        return tb - ta;
-      });
+    let qy = query(
+      collection(db, "complaints"),
+      orderBy("createdAt", "desc"),
+      orderBy(documentId(), "desc"),
+      limit(safeLimit),
+    );
+    if (cursor?.createdAt && cursor?.id) {
+      qy = query(qy, startAfter(cursor.createdAt, cursor.id));
     }
+    const snapshot = await getDocs(qy);
+    const rows = snapshot.docs.map((documentSnapshot) =>
+      mapComplaintDocument(documentSnapshot.id, documentSnapshot.data()),
+    );
+    const last = snapshot.docs[snapshot.docs.length - 1] ?? null;
+    return {
+      items: rows,
+      hasMore: snapshot.docs.length === safeLimit,
+      cursor: last
+        ? {
+            id: last.id,
+            createdAt: last.get("createdAt") ?? null,
+          }
+        : null,
+    };
+  }
+
+  async listComplaints({ pageSize = 200 } = {}) {
+    const page = await this.listComplaintsPage({ pageSize });
+    return page.items;
   }
 }
 

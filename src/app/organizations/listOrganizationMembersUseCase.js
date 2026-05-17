@@ -3,7 +3,7 @@ export class ListOrganizationMembersUseCase {
     this.organizationsRepository = organizationsRepository;
   }
 
-  async execute({ orgId }) {
-    return this.organizationsRepository.listOrganizationMembers({ orgId });
+  async execute({ orgId, pageSize = 200 } = {}) {
+    return this.organizationsRepository.listOrganizationMembers({ orgId, pageSize });
   }
 }

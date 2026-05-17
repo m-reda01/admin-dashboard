@@ -195,7 +195,7 @@ export function PlansManagementPage({
     setIsDeleting(true);
     try {
       for (const plan of toDelete) {
-        await deleteSubscriptionPlanUseCase.execute(plan.id);
+        await deleteSubscriptionPlanUseCase.execute({ planId: plan.id });
         deletedIds.push(plan.id);
       }
       setAlert({

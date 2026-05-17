@@ -1,4 +1,5 @@
 import { canMutateAdmins } from "../../domain/auth/adminPermissions.js";
+import { recordAdminAudit } from "../audit/recordAdminAudit.js";
 
 export class CreateAdminUseCase {
   constructor({ adminsRepository, adminAuditRepository }) {
@@ -11,8 +12,9 @@ export class CreateAdminUseCase {
       throw new Error("Only super admins can create admins.");
     }
     const result = await this.adminsRepository.createAdmin({ email, password, displayName, adminRole });
-    this.adminAuditRepository
-      ?.logAction({
+    await recordAdminAudit(
+      this.adminAuditRepository,
+      {
         action: "admin.create",
         targetType: "admin",
         targetId: result?.uid ?? "",
@@ -21,8 +23,9 @@ export class CreateAdminUseCase {
           displayName: displayName ?? "",
           adminRole: adminRole ?? "",
         },
-      })
-      .catch(() => {});
+      },
+      { required: true },
+    );
     return result;
   }
 }

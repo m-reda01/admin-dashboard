@@ -1,3 +1,5 @@
+import { recordAdminAudit } from "../audit/recordAdminAudit.js";
+
 export class DeleteDocumentUseCase {
   constructor({ documentsRepository, adminAuditRepository }) {
     this.documentsRepository = documentsRepository;
@@ -6,13 +8,15 @@ export class DeleteDocumentUseCase {
 
   async execute({ documentId }) {
     const result = await this.documentsRepository.deleteDocument({ documentId });
-    this.adminAuditRepository
-      ?.logAction({
+    await recordAdminAudit(
+      this.adminAuditRepository,
+      {
         action: "document.delete",
         targetType: "document",
         targetId: documentId,
-      })
-      .catch(() => {});
+      },
+      { required: true },
+    );
     return result;
   }
 }

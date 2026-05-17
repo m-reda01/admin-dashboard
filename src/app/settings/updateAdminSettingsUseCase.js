@@ -1,4 +1,5 @@
 import { canMutateAdmins } from "../../domain/auth/adminPermissions.js";
+import { recordAdminAudit } from "../audit/recordAdminAudit.js";
 
 export class UpdateAdminSettingsUseCase {
   constructor({ adminSettingsRepository, adminAuditRepository }) {
@@ -11,17 +12,15 @@ export class UpdateAdminSettingsUseCase {
       throw new Error("Not allowed to update settings.");
     }
     const result = await this.adminSettingsRepository.updateSettings(payload);
-    this.adminAuditRepository
-      ?.logAction({
-        action: "admin_settings.update",
-        targetType: "admin_settings",
-        targetId: "general",
-        after: {
-          platformName: payload?.platformName ?? "",
-          maintenanceMode: Boolean(payload?.maintenanceMode),
-        },
-      })
-      .catch(() => {});
+    await recordAdminAudit(this.adminAuditRepository, {
+      action: "admin_settings.update",
+      targetType: "admin_settings",
+      targetId: "general",
+      after: {
+        platformName: payload?.platformName ?? "",
+        maintenanceMode: Boolean(payload?.maintenanceMode),
+      },
+    });
     return result;
   }
 }

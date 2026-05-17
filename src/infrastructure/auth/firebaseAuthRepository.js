@@ -39,16 +39,16 @@ export class FirebaseAuthRepository {
 
         try {
           const adminProfile = await findAdminProfile(db, user.uid);
-          validateAdminDocument(adminProfile.data, user.uid);
+          const validatedAdmin = validateAdminDocument(adminProfile.data, user.uid);
 
           onSession(
             createAdminSession({
               uid: user.uid,
-              email: adminProfile.data.email || user.email,
-              displayName: adminProfile.data.displayName || user.displayName || user.email,
+              email: validatedAdmin.email || user.email,
+              displayName: validatedAdmin.displayName || user.displayName || user.email,
               photoURL: user.photoURL || "",
-              adminRole: adminProfile.data.adminRole,
-              isActive: adminProfile.data.isActive,
+              adminRole: validatedAdmin.adminRole,
+              isActive: validatedAdmin.isActive,
             }),
           );
         } catch (error) {
@@ -76,22 +76,27 @@ export class FirebaseAuthRepository {
     const user = credential.user;
     const adminProfile = await findAdminProfile(db, user.uid);
 
+    let validatedAdmin;
     try {
-      validateAdminDocument(adminProfile.data, user.uid);
+      validatedAdmin = validateAdminDocument(adminProfile.data, user.uid);
     } catch (error) {
       await firebaseSignOut(auth);
       throw error;
     }
 
-    updateDoc(adminProfile.ref, { lastLoginAt: serverTimestamp() }).catch(() => {});
+    updateDoc(adminProfile.ref, { lastLoginAt: serverTimestamp() }).catch((error) => {
+      if (import.meta.env.DEV) {
+        console.warn("[admin-auth] Failed to update lastLoginAt.", { error });
+      }
+    });
 
     return createAdminSession({
       uid: user.uid,
-      email: adminProfile.data.email || user.email,
-      displayName: adminProfile.data.displayName || user.displayName || user.email,
+      email: validatedAdmin.email || user.email,
+      displayName: validatedAdmin.displayName || user.displayName || user.email,
       photoURL: user.photoURL || "",
-      adminRole: adminProfile.data.adminRole,
-      isActive: adminProfile.data.isActive,
+      adminRole: validatedAdmin.adminRole,
+      isActive: validatedAdmin.isActive,
     });
   }
 
@@ -122,19 +127,29 @@ async function findAdminProfile(db, uid) {
     };
   }
 
-  const adminQuery = query(
+  const legacyAdminQuery = query(
     collection(db, "admins"),
     where("uid", "==", uid),
-    limit(1),
+    limit(2),
   );
-  const adminQuerySnapshot = await getDocs(adminQuery);
+  const legacySnapshot = await getDocs(legacyAdminQuery);
 
-  if (!adminQuerySnapshot.empty) {
-    const adminDocument = adminQuerySnapshot.docs[0];
+  if (legacySnapshot.size === 1) {
+    const adminDocument = legacySnapshot.docs[0];
+    if (import.meta.env.DEV) {
+      console.warn("[admin-auth] Admin profile uses legacy document id. Prefer admins/{uid}.", {
+        uid,
+        documentId: adminDocument.id,
+      });
+    }
     return {
       ref: adminDocument.ref,
       data: adminDocument.data(),
     };
+  }
+
+  if (legacySnapshot.size > 1) {
+    throw new Error("Multiple admin profiles match this account.");
   }
 
   return {

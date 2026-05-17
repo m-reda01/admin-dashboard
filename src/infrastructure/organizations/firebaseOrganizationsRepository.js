@@ -49,10 +49,11 @@ export class FirebaseOrganizationsRepository {
     return { ...org, membersCount, ...ownerExtras };
   }
 
-  async listOrganizationMembers({ orgId }) {
+  async listOrganizationMembers({ orgId, pageSize = 200 } = {}) {
     if (!orgId) throw new Error("Organization id is required.");
     const { db } = getFirebaseServices();
-    const snapshot = await getDocs(collection(db, "orgs", orgId, "members"));
+    const safeLimit = Math.min(Math.max(Number(pageSize) || 200, 1), 500);
+    const snapshot = await getDocs(query(collection(db, "orgs", orgId, "members"), limit(safeLimit)));
     return snapshot.docs.map((memberSnap) => mapOrgMemberDocument(memberSnap.id, memberSnap.data()));
   }
 

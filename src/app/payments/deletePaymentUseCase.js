@@ -1,3 +1,5 @@
+import { recordAdminAudit } from "../audit/recordAdminAudit.js";
+
 export class DeletePaymentUseCase {
   constructor({ paymentsRepository, adminAuditRepository }) {
     this.paymentsRepository = paymentsRepository;
@@ -6,13 +8,15 @@ export class DeletePaymentUseCase {
 
   async execute({ paymentDocId }) {
     const result = await this.paymentsRepository.deletePayment(paymentDocId);
-    this.adminAuditRepository
-      ?.logAction({
+    await recordAdminAudit(
+      this.adminAuditRepository,
+      {
         action: "payment.delete",
         targetType: "payment",
         targetId: paymentDocId,
-      })
-      .catch(() => {});
+      },
+      { required: true },
+    );
     return result;
   }
 }

@@ -146,7 +146,9 @@ admins/{uid} {
 
 Preferred setup: make the Firestore document ID the same as the Firebase Auth `uid`.
 
-Current compatibility: the login code also supports an auto-generated Firestore document ID if the document has a `uid` field that matches the Firebase Auth user uid.
+Compatibility: legacy auto-generated admin document IDs are still accepted only when exactly one `admins` document has a `uid` field matching the Firebase Auth user uid. The same active-role validation still applies.
+
+If login shows `This account is not registered as an admin.`, the Firebase Auth account exists, but Firestore has neither `admins/{uid}` nor exactly one legacy admin document with `uid` equal to that Auth user's uid.
 
 Required document shape:
 

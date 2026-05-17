@@ -12,7 +12,7 @@ import {
   ShieldUser,
   Tag,
 } from "lucide-react";
-import { AdminRole } from "../../domain/auth/adminSession.js";
+import { canViewAdminsPage } from "../../domain/auth/adminPermissions.js";
 import { useAdminShell } from "../app/adminShellContext.jsx";
 import { useI18n } from "../i18n/I18nProvider.jsx";
 import { useAdminTheme } from "../theme/AdminThemeProvider.jsx";
@@ -345,7 +345,7 @@ function getInitials(value) {
 }
 
 function navigationGroupsForSession(session) {
-  if (session?.adminRole !== AdminRole.SUPPORT) return navigationGroups;
+  if (canViewAdminsPage(session?.adminRole)) return navigationGroups;
   return navigationGroups
     .map((group) => ({
       ...group,

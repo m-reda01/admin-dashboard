@@ -38,6 +38,8 @@ import { FirebaseOrganizationsRepository } from "../../infrastructure/organizati
 import { FirebasePaymentsRepository } from "../../infrastructure/payments/firebasePaymentsRepository.js";
 import { FirebaseSubscriptionPlansRepository } from "../../infrastructure/subscriptionPlans/firebaseSubscriptionPlansRepository.js";
 import { FirebaseUsersRepository } from "../../infrastructure/users/firebaseUsersRepository.js";
+import { canViewAdminsPage } from "../../domain/auth/adminPermissions.js";
+import { isAdminRole } from "../../domain/auth/adminSession.js";
 import { ForgotPasswordPage } from "../features/auth/ForgotPasswordPage.jsx";
 import { LoginPage } from "../features/auth/LoginPage.jsx";
 import { AdminsManagementPage } from "../pages/AdminsManagementPage.jsx";
@@ -203,12 +205,13 @@ export function App() {
   useEffect(() => {
     const unsubscribe = authRepository.subscribeToSession(
       (nextSession) => {
-        setSession(nextSession);
+        const validSession = nextSession && isAdminRole(nextSession.adminRole) && nextSession.isActive === true ? nextSession : null;
+        setSession(validSession);
         setIsCheckingSession(false);
 
         const route = getAppRoute();
         if (
-          nextSession &&
+          validSession &&
           route !== "dashboard" &&
           route !== "users" &&
           route !== "user-details" &&
@@ -225,8 +228,13 @@ export function App() {
           return;
         }
 
+        if (validSession && (route === "admins" || route === "settings") && !canViewAdminsPage(validSession.adminRole)) {
+          replaceRoute("/dashboard");
+          return;
+        }
+
         if (
-          !nextSession &&
+          !validSession &&
           (route === "dashboard" ||
             route === "users" ||
             route === "user-details" ||
@@ -261,6 +269,11 @@ export function App() {
   }
 
   async function handleSignedIn(nextSession) {
+    if (!nextSession || !isAdminRole(nextSession.adminRole) || nextSession.isActive !== true) {
+      setSession(null);
+      replaceRoute("/login");
+      return;
+    }
     setSession(nextSession);
     replaceRoute("/dashboard");
   }
@@ -361,7 +374,7 @@ export function App() {
         onNavigate={navigateRoute}
       />
     );
-  } else if (appRoute === "admins" && session) {
+  } else if (appRoute === "admins" && session && canViewAdminsPage(session.adminRole)) {
     content = (
       <AdminsManagementPage
         createAdminUseCase={createAdminUseCase}
@@ -384,7 +397,7 @@ export function App() {
         onNavigate={navigateRoute}
       />
     );
-  } else if (appRoute === "settings" && session) {
+  } else if (appRoute === "settings" && session && canViewAdminsPage(session.adminRole)) {
     content = (
       <SettingsPage
         onNavigate={navigateRoute}

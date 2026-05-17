@@ -1,6 +1,6 @@
 import { collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
-import { isAdminRole } from "../../domain/auth/adminSession.js";
+import { isAdminRole, normalizeAdminRole } from "../../domain/auth/adminSession.js";
 import { getFirebaseServices, getSecondaryProvisioningAuth } from "../firebase/firebaseClient.js";
 
 export class FirebaseAdminsRepository {
@@ -17,7 +17,8 @@ export class FirebaseAdminsRepository {
    * then writes Firestore `admins/{uid}`.
    */
   async createAdmin({ email, password, displayName, adminRole }) {
-    if (!isAdminRole(adminRole)) {
+    const normalizedRole = normalizeAdminRole(adminRole);
+    if (!isAdminRole(normalizedRole)) {
       throw new Error("Invalid admin role.");
     }
     const normalizedEmail = String(email || "").trim().toLowerCase();
@@ -40,7 +41,11 @@ export class FirebaseAdminsRepository {
       }
       throw e;
     } finally {
-      await signOut(secondaryAuth).catch(() => {});
+      await signOut(secondaryAuth).catch((error) => {
+        if (import.meta.env.DEV) {
+          console.warn("[admin-provisioning] Failed to sign out secondary auth.", { error });
+        }
+      });
     }
 
     const uid = credential.user.uid;
@@ -51,7 +56,7 @@ export class FirebaseAdminsRepository {
       uid,
       email: normalizedEmail,
       displayName: name,
-      adminRole,
+      adminRole: normalizedRole,
       isActive: true,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -71,8 +76,9 @@ export class FirebaseAdminsRepository {
     const patch = { updatedAt: serverTimestamp() };
     if (displayName !== undefined) patch.displayName = String(displayName || "").trim();
     if (adminRole !== undefined) {
-      if (!isAdminRole(adminRole)) throw new Error("Invalid admin role.");
-      patch.adminRole = adminRole;
+      const normalizedRole = normalizeAdminRole(adminRole);
+      if (!isAdminRole(normalizedRole)) throw new Error("Invalid admin role.");
+      patch.adminRole = normalizedRole;
     }
     if (isActive !== undefined) patch.isActive = Boolean(isActive);
     await updateDoc(adminRef, patch);
@@ -97,7 +103,7 @@ function normalizeAdminDoc(documentId, data) {
     uid,
     email: typeof data?.email === "string" ? data.email : "",
     displayName: typeof data?.displayName === "string" ? data.displayName : "",
-    adminRole: typeof data?.adminRole === "string" ? data.adminRole : "",
+    adminRole: normalizeAdminRole(data?.adminRole),
     isActive: data?.isActive === true,
     createdAt: data?.createdAt ?? null,
     updatedAt: data?.updatedAt ?? null,

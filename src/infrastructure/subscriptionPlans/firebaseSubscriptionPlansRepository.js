@@ -56,13 +56,29 @@ export class FirebaseSubscriptionPlansRepository {
   }
 
   async deletePlan(planId) {
+    const id = String(planId ?? "").trim();
+    if (!id) throw new Error("Subscription plan id is required.");
     const { db } = getFirebaseServices();
-    await updateDoc(doc(db, COLLECTION, planId), {
+    const docRef = doc(db, COLLECTION, id);
+    const existing = await getDoc(docRef);
+    if (!existing.exists()) {
+      throw new Error("Subscription plan not found.");
+    }
+    const before = mapPlanDocument(existing.id, existing.data());
+    const after = {
+      ...before,
+      isActive: false,
+      lifecycleStatus: "retired",
+      retiredAt: new Date(),
+      updatedAt: new Date(),
+    };
+    await updateDoc(docRef, {
       isActive: false,
       lifecycleStatus: "retired",
       retiredAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
+    return { before, after };
   }
 }
 

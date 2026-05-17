@@ -10,7 +10,6 @@ import {
   Printer,
   RefreshCw,
   Search,
-  UserRound,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import {
@@ -178,18 +177,15 @@ export function BillingPage({ getUserProfileUseCase, listPaymentsUseCase, onNavi
       t("billing.cols.paymentId"),
       t("billing.cols.date"),
       t("billing.cols.description"),
-      t("billing.cols.subscriber"),
       t("billing.cols.method"),
       t("billing.cols.amount"),
       t("billing.cols.status"),
     ];
     const body = visiblePayments.map((payment) => {
-      const subscriber = getPaymentSubscriber(payment, subscriberMap, t);
       return [
         payment.paymentId || payment.invoiceId || payment.id,
         formatBillingPaymentDate(payment.createdAt, language),
         payment.description || formatPurpose(payment.purpose),
-        subscriber.displayName,
         formatCardMethod(payment),
         Number(payment.amount) || 0,
         t(`billing.statuses.${payment.status}`) || payment.status || "",
@@ -200,7 +196,6 @@ export function BillingPage({ getUserProfileUseCase, listPaymentsUseCase, onNavi
       { wch: 24 },
       { wch: 22 },
       { wch: 36 },
-      { wch: 28 },
       { wch: 22 },
       { wch: 14 },
       { wch: 14 },
@@ -291,7 +286,6 @@ export function BillingPage({ getUserProfileUseCase, listPaymentsUseCase, onNavi
               <thead>
                 <tr>
                   <th>{t("billing.cols.summary")}</th>
-                  <th>{t("billing.cols.subscriber")}</th>
                   <th>{t("billing.cols.method")}</th>
                   <th>{t("billing.cols.amount")}</th>
                   <th>{t("billing.cols.status")}</th>
@@ -303,7 +297,7 @@ export function BillingPage({ getUserProfileUseCase, listPaymentsUseCase, onNavi
 
                 {!isLoading && error && (
                   <tr>
-                    <td colSpan={6} className="plans-empty-cell plans-empty-cell--error">
+                    <td colSpan={5} className="plans-empty-cell plans-empty-cell--error">
                       {error}
                     </td>
                   </tr>
@@ -311,7 +305,7 @@ export function BillingPage({ getUserProfileUseCase, listPaymentsUseCase, onNavi
 
                 {!isLoading && !error && visiblePayments.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="plans-empty-cell">
+                    <td colSpan={5} className="plans-empty-cell">
                       {t("billing.empty")}
                     </td>
                   </tr>
@@ -320,17 +314,17 @@ export function BillingPage({ getUserProfileUseCase, listPaymentsUseCase, onNavi
                 {!isLoading &&
                   !error &&
                   pagePayments.map((payment) => {
-                    const subscriber = getPaymentSubscriber(payment, subscriberMap, t);
+                    const card = getPaymentCardMeta(payment);
                     return (
                       <tr key={payment.id} data-testid={`billing-payment-row-${payment.id}`}>
-                        <td>
+                        <td className="billing-transaction-cell">
                           <button
                             type="button"
                             className="billing-payment-id-button"
                             onClick={() => setDetailPayment(payment)}
                           >
                             <span className="billing-payment-id">
-                              {payment.invoiceId || payment.paymentId || shortId(payment.id)}
+                              {shortPaymentId(payment.invoiceId || payment.paymentId || payment.id)}
                             </span>
                           </button>
                           <span className="billing-payment-summary-date">
@@ -342,25 +336,19 @@ export function BillingPage({ getUserProfileUseCase, listPaymentsUseCase, onNavi
                         </td>
 
                         <td>
-                          <div className="billing-subscriber-cell">
-                            <span className="billing-subscriber-avatar" aria-hidden>
-                              <UserRound size={14} />
-                            </span>
-                            <span className="billing-subscriber-copy">
-                              <strong>{subscriber.displayName}</strong>
-                              <small>{subscriber.email || subscriber.typeLabel}</small>
-                            </span>
-                          </div>
-                        </td>
-
-                        <td>
                           <div className="billing-method-cell">
-                            <strong>{formatCardMethod(payment)}</strong>
-                            <small>{formatPurpose(payment.purpose)}</small>
+                            <div className="billing-method-card-line">
+                              <span className="billing-method-icon" aria-hidden>
+                                <CreditCard size={14} />
+                              </span>
+                              <strong>{card.brand}</strong>
+                            </div>
+                            <small className="billing-method-mask">{card.masked}</small>
+                            <span className="billing-purpose-pill">{formatPurpose(payment.purpose)}</span>
                           </div>
                         </td>
 
-                        <td className="plans-table-price">
+                        <td className="plans-table-price billing-amount-cell">
                           {formatBillingCurrency(payment.amount, payment.currency, language)}
                         </td>
 
@@ -371,10 +359,10 @@ export function BillingPage({ getUserProfileUseCase, listPaymentsUseCase, onNavi
                         </td>
 
                         <td>
-                          <div className="plans-actions-cell">
+                          <div className="plans-actions-cell billing-actions-cell">
                             <button
                               type="button"
-                              className="plans-action-edit"
+                              className="plans-action-edit billing-action-button"
                               aria-label={t("billing.downloadPdf")}
                               data-testid={`billing-download-${payment.id}`}
                               onClick={() => void downloadPaymentPdf(payment, language, t)}
@@ -383,7 +371,7 @@ export function BillingPage({ getUserProfileUseCase, listPaymentsUseCase, onNavi
                             </button>
                             <button
                               type="button"
-                              className="plans-action-edit"
+                              className="plans-action-edit billing-action-button"
                               aria-label={t("billing.printInvoice")}
                               data-testid={`billing-print-${payment.id}`}
                               onClick={() => printPaymentPdf(payment, language, t)}
@@ -392,7 +380,7 @@ export function BillingPage({ getUserProfileUseCase, listPaymentsUseCase, onNavi
                             </button>
                             <button
                               type="button"
-                              className="plans-action-edit"
+                              className="plans-action-edit billing-action-button billing-action-button--primary"
                               aria-label={t("billing.openDetails")}
                               data-testid={`billing-details-${payment.id}`}
                               onClick={() => setDetailPayment(payment)}
@@ -487,15 +475,6 @@ function BillingPaymentsTableShimmerRows({ rowCount }) {
         </div>
       </td>
       <td>
-        <div className="users-shimmer-name">
-          <span className="users-shimmer users-shimmer-avatar" />
-          <span className="users-shimmer-lines">
-            <span className="users-shimmer users-shimmer-line users-shimmer-line--name" />
-            <span className="users-shimmer users-shimmer-line users-shimmer-line--email" />
-          </span>
-        </div>
-      </td>
-      <td>
         <div className="users-shimmer-lines">
           <span className="users-shimmer users-shimmer-line users-shimmer-line--role" />
           <span className="users-shimmer users-shimmer-line users-shimmer-line--email" />
@@ -536,6 +515,15 @@ function formatCardMethod(payment) {
   return formatMethod(payment.method);
 }
 
+function getPaymentCardMeta(payment) {
+  const brand = String(payment.cardBrand || "").trim().toUpperCase() || formatMethod(payment.method) || "CARD";
+  const masked = String(payment.maskedCardNumber || "").trim();
+  return {
+    brand,
+    masked: masked || "Masked card",
+  };
+}
+
 function openPaymentSubscriber(payment, onNavigate) {
   const orgId = String(payment.orgId || "").trim();
   const userId = String(payment.userId || "").trim();
@@ -551,4 +539,12 @@ function openPaymentSubscriber(payment, onNavigate) {
 function shortId(id) {
   if (!id) return "-";
   return id.length > 12 ? `${id.slice(0, 8)}...` : id;
+}
+
+function shortPaymentId(id) {
+  const value = String(id || "").trim();
+  if (!value) return "-";
+  const clean = value.startsWith("#") ? value.slice(1) : value;
+  if (clean.length <= 14) return `#${clean}`;
+  return `#${clean.slice(0, 6)}...${clean.slice(-5)}`;
 }

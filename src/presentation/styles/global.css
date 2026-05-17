@@ -7087,38 +7087,12 @@ button.users-role.users-role--org-link:focus-visible {
   color: var(--brand-strong);
 }
 
-.billing-subscriber-cell,
 .billing-method-cell {
   display: grid;
   gap: 4px;
   min-width: 0;
 }
 
-.billing-subscriber-cell {
-  align-items: center;
-  grid-template-columns: 26px minmax(0, 1fr);
-}
-
-.billing-subscriber-avatar {
-  align-items: center;
-  background: var(--theme-bg-elevated);
-  border: 1px solid var(--theme-border);
-  border-radius: 999px;
-  color: var(--theme-text-muted);
-  display: inline-flex;
-  height: 24px;
-  justify-content: center;
-  width: 24px;
-}
-
-.billing-subscriber-copy {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-}
-
-.billing-subscriber-copy strong,
-.billing-subscriber-copy small,
 .billing-method-cell strong,
 .billing-method-cell small {
   overflow: hidden;
@@ -7126,7 +7100,6 @@ button.users-role.users-role--org-link:focus-visible {
   white-space: nowrap;
 }
 
-.billing-subscriber-copy strong,
 .billing-method-cell strong {
   color: var(--theme-text);
   font-size: var(--font-size-body2);
@@ -7134,7 +7107,6 @@ button.users-role.users-role--org-link:focus-visible {
   line-height: var(--line-height-subtitle);
 }
 
-.billing-subscriber-copy small,
 .billing-method-cell small {
   color: var(--theme-text-muted);
   font-size: var(--font-size-caption);
@@ -7876,4 +7848,285 @@ button.users-role.users-role--org-link:focus-visible {
   font-weight: var(--font-weight-medium);
   line-height: 1.2;
   padding: 5px 10px;
+}
+
+/* Billing payment transactions polish */
+.plans-management-page.billing-payments-page .users-toolbar {
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.plans-management-page.billing-payments-page .users-search {
+  border-radius: 10px;
+  height: 38px;
+  max-width: 360px;
+}
+
+.plans-management-page.billing-payments-page .users-search input {
+  font-size: var(--font-size-body2);
+}
+
+.plans-management-page.billing-payments-page .users-filter-select {
+  border-radius: 10px;
+  height: 38px;
+  min-width: 150px;
+}
+
+.plans-management-page.billing-payments-page .users-filter-select select {
+  font-size: var(--font-size-body2);
+}
+
+.plans-management-page.billing-payments-page .billing-payments-table-shell {
+  border-color: var(--theme-border-subtle);
+  border-radius: 10px;
+  box-shadow: 0 12px 34px color-mix(in srgb, var(--theme-text) 5%, transparent);
+}
+
+.plans-management-page.billing-payments-page table.plans-table.payments-table {
+  min-width: 840px;
+}
+
+.plans-management-page.billing-payments-page table.plans-table.payments-table th {
+  color: var(--theme-text-muted);
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  height: 44px;
+  letter-spacing: 0;
+  padding-block: 10px;
+  text-transform: uppercase;
+}
+
+.plans-management-page.billing-payments-page table.plans-table.payments-table td {
+  padding: 14px 12px;
+  vertical-align: middle;
+}
+
+.plans-management-page.billing-payments-page table.plans-table.payments-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--brand-strong) 4%, var(--theme-bg));
+}
+
+.plans-management-page.billing-payments-page table.plans-table.payments-table th:nth-child(1),
+.plans-management-page.billing-payments-page table.plans-table.payments-table td:nth-child(1) {
+  width: 31%;
+}
+
+.plans-management-page.billing-payments-page table.plans-table.payments-table th:nth-child(2),
+.plans-management-page.billing-payments-page table.plans-table.payments-table td:nth-child(2) {
+  width: 27%;
+}
+
+.plans-management-page.billing-payments-page table.plans-table.payments-table th:nth-child(3),
+.plans-management-page.billing-payments-page table.plans-table.payments-table td:nth-child(3) {
+  text-align: end;
+  width: 14%;
+}
+
+.plans-management-page.billing-payments-page table.plans-table.payments-table th:nth-child(4),
+.plans-management-page.billing-payments-page table.plans-table.payments-table td:nth-child(4) {
+  width: 12%;
+}
+
+.plans-management-page.billing-payments-page table.plans-table.payments-table th:nth-child(5),
+.plans-management-page.billing-payments-page table.plans-table.payments-table td:nth-child(5) {
+  width: 16%;
+}
+
+.billing-transaction-cell {
+  min-width: 0;
+}
+
+.billing-page .billing-payment-id-button {
+  cursor: pointer;
+}
+
+.billing-page .billing-payment-id {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: var(--theme-text);
+  display: inline-block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0;
+  line-height: 1.3;
+  max-width: 150px;
+  overflow: hidden;
+  padding: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.billing-page .billing-payment-id-button:hover .billing-payment-id {
+  color: var(--brand-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.billing-payment-summary-date {
+  color: var(--theme-text-muted);
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.35;
+  margin-top: 5px;
+}
+
+.billing-payment-summary-desc {
+  color: color-mix(in srgb, var(--theme-text-muted) 88%, var(--theme-bg));
+  font-size: 11px;
+  line-height: 1.35;
+  margin-top: 4px;
+}
+
+.billing-method-cell {
+  gap: 4px;
+}
+
+.billing-method-card-line {
+  align-items: center;
+  display: inline-flex;
+  gap: 7px;
+  min-width: 0;
+}
+
+.billing-method-icon {
+  align-items: center;
+  background: color-mix(in srgb, var(--brand-strong) 8%, var(--theme-bg-elevated));
+  border: 1px solid color-mix(in srgb, var(--brand-strong) 14%, var(--theme-border));
+  border-radius: 7px;
+  color: var(--brand-strong);
+  display: inline-flex;
+  height: 24px;
+  justify-content: center;
+  width: 24px;
+}
+
+.billing-method-card-line strong {
+  color: var(--theme-text);
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.25;
+}
+
+.billing-method-mask {
+  color: var(--theme-text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 11px;
+}
+
+.billing-purpose-pill {
+  align-self: start;
+  background: color-mix(in srgb, var(--theme-text-muted) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--theme-text-muted) 12%, transparent);
+  border-radius: 999px;
+  color: var(--theme-text-muted);
+  display: inline-flex;
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.2;
+  max-width: 150px;
+  overflow: hidden;
+  padding: 3px 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.billing-amount-cell {
+  color: var(--theme-text);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.billing-status-pill {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  padding: 5px 9px;
+}
+
+.billing-status-pill--paid {
+  background: color-mix(in srgb, #10b981 13%, var(--theme-bg-elevated));
+  color: #047857;
+}
+
+.billing-status-pill--pending {
+  background: color-mix(in srgb, #f59e0b 14%, var(--theme-bg-elevated));
+  color: #b45309;
+}
+
+.billing-status-pill--failed,
+.billing-status-pill--cancelled {
+  background: color-mix(in srgb, #ef4444 12%, var(--theme-bg-elevated));
+  color: #b91c1c;
+}
+
+.billing-status-pill--refunded {
+  background: color-mix(in srgb, #64748b 14%, var(--theme-bg-elevated));
+  color: #475569;
+}
+
+.billing-actions-cell {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  min-width: 104px;
+}
+
+.billing-action-button {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--theme-text-muted);
+  height: 30px;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  width: 30px;
+}
+
+.billing-action-button svg {
+  height: 15px;
+  width: 15px;
+}
+
+.billing-action-button:hover {
+  background: var(--theme-bg-soft);
+  border-color: var(--theme-border-subtle);
+  color: var(--brand-strong);
+  transform: translateY(-1px);
+}
+
+.billing-action-button--primary {
+  background: color-mix(in srgb, var(--brand-strong) 10%, var(--theme-bg-elevated));
+  color: var(--brand-strong);
+}
+
+.billing-action-button--primary:hover {
+  background: var(--brand-strong);
+  border-color: var(--brand-strong);
+  color: #fff;
+}
+
+.billing-toolbar-excel-button {
+  border-radius: 10px;
+  height: 38px;
+  width: 48px;
+}
+
+@media (max-width: 900px) {
+  .plans-management-page.billing-payments-page table.plans-table.payments-table {
+    min-width: 720px;
+  }
+
+  .plans-management-page.billing-payments-page .users-toolbar {
+    align-items: stretch;
+  }
+
+  .plans-management-page.billing-payments-page .users-search {
+    max-width: none;
+  }
 }

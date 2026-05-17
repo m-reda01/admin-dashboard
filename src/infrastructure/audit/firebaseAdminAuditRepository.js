@@ -44,7 +44,7 @@ export class FirebaseAdminAuditRepository {
     const { db, auth } = getFirebaseServices();
     const adminUser = auth.currentUser;
     if (!adminUser?.uid) {
-      return;
+      throw new Error("Admin session is required for audit logging.");
     }
 
     await addDoc(collection(db, "admin_logs"), {

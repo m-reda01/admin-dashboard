@@ -1,3 +1,5 @@
+import { recordAdminAudit } from "../audit/recordAdminAudit.js";
+
 export class DeleteUserUseCase {
   constructor({ usersRepository, adminAuditRepository }) {
     this.usersRepository = usersRepository;
@@ -10,12 +12,14 @@ export class DeleteUserUseCase {
     }
 
     await this.usersRepository.deleteUser({ userId });
-    this.adminAuditRepository
-      ?.logAction({
+    await recordAdminAudit(
+      this.adminAuditRepository,
+      {
         action: "user.delete",
         targetType: "user",
         targetId: userId,
-      })
-      .catch(() => {});
+      },
+      { required: true },
+    );
   }
 }

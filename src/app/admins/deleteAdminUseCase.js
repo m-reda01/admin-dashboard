@@ -1,4 +1,5 @@
 import { canMutateAdmins } from "../../domain/auth/adminPermissions.js";
+import { recordAdminAudit } from "../audit/recordAdminAudit.js";
 
 export class DeleteAdminUseCase {
   constructor({ adminsRepository, adminAuditRepository }) {
@@ -15,12 +16,14 @@ export class DeleteAdminUseCase {
       throw new Error("You cannot delete your own admin profile.");
     }
     await this.adminsRepository.deleteAdmin(targetUid);
-    this.adminAuditRepository
-      ?.logAction({
+    await recordAdminAudit(
+      this.adminAuditRepository,
+      {
         action: "admin.delete",
         targetType: "admin",
         targetId: targetUid,
-      })
-      .catch(() => {});
+      },
+      { required: true },
+    );
   }
 }

@@ -12,13 +12,19 @@ import {
   where,
 } from "firebase/firestore";
 import { getFirebaseServices } from "../firebase/firebaseClient.js";
+import { ComplaintStatus } from "../../domain/firestore/entityStatus.js";
+
+const ALLOWED_COMPLAINT_STATUSES = new Set(Object.values(ComplaintStatus));
 
 export class FirebaseComplaintsRepository {
   async updateComplaintStatus({ complaintId, status }) {
     const id = String(complaintId ?? "").trim();
-    const nextStatus = String(status ?? "").trim();
+    const nextStatus = String(status ?? "").trim().toLowerCase();
     if (!id) throw new Error("Complaint id is required.");
     if (!nextStatus) throw new Error("Status is required.");
+    if (!ALLOWED_COMPLAINT_STATUSES.has(nextStatus)) {
+      throw new Error("Unsupported complaint status.");
+    }
 
     const { db } = getFirebaseServices();
     await updateDoc(doc(db, "complaints", id), {

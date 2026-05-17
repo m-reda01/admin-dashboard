@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-const COMPLAINT_STATUS_PRESETS = ["open", "pending", "resolved", "closed", "rejected"];
+const COMPLAINT_STATUS_PRESETS = ["open", "in_progress", "resolved", "rejected"];
 
 export function buildComplaintStatusSelectValues(complaint) {
   const current = String(complaint?.status ?? "").trim();
   const lower = current.toLowerCase();
   const out = [];
   const seen = new Set();
-  if (current) {
+  if (current && COMPLAINT_STATUS_PRESETS.includes(lower)) {
     out.push(current);
     seen.add(lower);
   }

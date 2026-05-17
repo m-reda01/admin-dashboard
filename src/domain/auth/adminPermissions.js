@@ -1,9 +1,10 @@
-import { AdminRole } from "./adminSession.js";
+import { AdminRole, normalizeAdminRole } from "./adminSession.js";
 
 export function canViewAdminsPage(adminRole) {
-  return adminRole === AdminRole.SUPER_ADMIN || adminRole === AdminRole.ADMIN;
+  const role = normalizeAdminRole(adminRole);
+  return role === AdminRole.SUPER_ADMIN || role === AdminRole.ADMIN;
 }
 
 export function canMutateAdmins(adminRole) {
-  return adminRole === AdminRole.SUPER_ADMIN;
+  return normalizeAdminRole(adminRole) === AdminRole.SUPER_ADMIN;
 }

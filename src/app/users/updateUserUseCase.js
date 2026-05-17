@@ -1,3 +1,5 @@
+import { recordAdminAudit } from "../audit/recordAdminAudit.js";
+
 export class UpdateUserUseCase {
   constructor({ usersRepository, adminAuditRepository }) {
     this.usersRepository = usersRepository;
@@ -14,19 +16,17 @@ export class UpdateUserUseCase {
     }
 
     const result = await this.usersRepository.updateUser({ user, userId });
-    this.adminAuditRepository
-      ?.logAction({
-        action: "user.update",
-        targetType: "user",
-        targetId: userId,
-        after: {
-          displayName: user?.displayName ?? "",
-          role: user?.role ?? "",
-          isActive: Boolean(user?.isActive),
-          orgId: user?.orgId ?? "",
-        },
-      })
-      .catch(() => {});
+    await recordAdminAudit(this.adminAuditRepository, {
+      action: "user.update",
+      targetType: "user",
+      targetId: userId,
+      after: {
+        displayName: user?.displayName ?? "",
+        role: user?.role ?? "",
+        isActive: Boolean(user?.isActive),
+        orgId: user?.orgId ?? "",
+      },
+    });
     return result;
   }
 }

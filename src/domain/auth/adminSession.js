@@ -5,23 +5,40 @@ export const AdminRole = Object.freeze({
 });
 
 export function isAdminRole(value) {
-  return Object.values(AdminRole).includes(value);
+  return Object.values(AdminRole).includes(normalizeAdminRole(value));
+}
+
+export function normalizeAdminRole(value) {
+  return String(value ?? "").trim().toLowerCase();
 }
 
 export function createAdminSession({
-  uid = "local-preview-admin",
+  uid,
   email,
   displayName,
   photoURL = "",
-  adminRole = AdminRole.SUPER_ADMIN,
+  adminRole,
   isActive = true,
 }) {
+  const normalizedRole = normalizeAdminRole(adminRole);
+  if (!uid) {
+    throw new Error("Admin session uid is required.");
+  }
+  if (!email) {
+    throw new Error("Admin session email is required.");
+  }
+  if (!isAdminRole(normalizedRole)) {
+    throw new Error("This admin role is not supported.");
+  }
+  if (isActive !== true) {
+    throw new Error("This admin account is disabled.");
+  }
   return {
     uid,
     email,
     displayName: displayName || email,
     photoURL: String(photoURL ?? "").trim(),
-    adminRole,
-    isActive,
+    adminRole: normalizedRole,
+    isActive: true,
   };
 }
